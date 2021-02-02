@@ -7,13 +7,15 @@ from nicks_line_tools.Vector2 import Vector2
 from nicks_line_tools.nicks_itertools import pairwise
 
 # Define some type aliases to shorten type declarations
-Line = Tuple[Vector2, Vector2]
+from nicks_line_tools.util import clamp_zero_to_one
+
+LineSegment = Tuple[Vector2, Vector2]
 LineString = List[Vector2]
 
 
-def offset_segments(inp: LineString, offset: float) -> Tuple[List[Line], List[Line]]:
-	segments_positive: List[Line] = []
-	segments_negative: List[Line] = []
+def offset_segments(inp: LineString, offset: float) -> Tuple[List[LineSegment], List[LineSegment]]:
+	segments_positive: List[LineSegment] = []
+	segments_negative: List[LineSegment] = []
 	for a, b in zip(inp, inp[1:]):
 		offset_vector = (b - a).left.unit.scaled(offset)
 		segments_positive.append((a + offset_vector, b + offset_vector))
@@ -67,7 +69,7 @@ def solve_intersection(a: Vector2, b: Vector2, c: Vector2, d: Vector2) -> Option
 	ab_cross_cd = ab.cross(cd)
 	
 	if ab_cross_cd == 0:
-		
+		# TODO: this can also happen if either vector is the Zero vector.
 		# vectors are not linearly independent; ab and cd are parallel
 		# segments are collinear if ac is parallel to ab
 		# ac ∥ ab
@@ -91,7 +93,7 @@ def solve_intersection(a: Vector2, b: Vector2, c: Vector2, d: Vector2) -> Option
 		return a + ab.scaled(time_1), time_1, time_2
 
 
-def connect_offset_segments(inp: List[Line]) -> LineString:
+def connect_offset_segments(inp: List[LineSegment]) -> LineString:
 	# Algorithm 1 - connect disjoint line segments by extension
 	if len(inp) == 1:
 		return [*inp[0]]
@@ -230,7 +232,7 @@ def split_at_parameters(inp: LineString, params: List[float]):
 	return output
 
 
-def params_to_points(inp: LineString, params: List[float]):
+def linestring_params_to_points(inp: LineString, params: List[float]):
 	output = []
 	for param in params:
 		a = inp[math.floor(param)]
@@ -239,7 +241,79 @@ def params_to_points(inp: LineString, params: List[float]):
 	return output
 
 
+def scalar_projection_of_point_onto_line(a: Vector2, b: Vector2, p: Vector2) -> float:
+	"""project p onto line ab returning scalar t such that a+ab.t is the desired output point."""
+	ab = b - a
+	ap = p - a
+	t = ap.dot(ab) / ab.dot(ab)
+	return t
+
+
+def scalar_projection_of_point_onto_line_segment(a: Vector2, b: Vector2, p: Vector2) -> float:
+	"""project p onto line ab returning scalar t such that a+ab.t is the desired output point, where t is clamped between 0 and 1."""
+	ab = b - a
+	ap = p - a
+	t = ap.dot(ab) / ab.dot(ab)
+	t = clamp_zero_to_one(t)
+	return t
+
+
+def closest_point_on_line_to_line(a: Vector2, b: Vector2, c: Vector2, d: Vector2) -> (float, Vector2):
+	"""the closest point on ab to cd, and the distance_squared"""
+	ab = b - a
+	cd = d - c
+	
+	ab_magnitude_squared = ab.magnitude_squared
+	cd_magnitude_squared = cd.magnitude_squared
+	
+	# TODO: handle zero vectors?
+	
+	ac = c - a
+	ad = d - a
+	ca = a - c
+	cb = b - c
+	
+	result = []
+	
+	# project c onto ab
+	c_on_ab = a + ab.scaled(clamp_zero_to_one(ac.dot(ab) / ab_magnitude_squared))
+	dist_c_sq = (c_on_ab - c).magnitude_squared
+	result.append((dist_c_sq, c_on_ab))
+	# project d onto ab
+	d_on_ab = a + ab.scaled(clamp_zero_to_one(ad.dot(ab) / ab_magnitude_squared))
+	dist_d_sq = (d_on_ab - d).magnitude_squared
+	result.append((dist_d_sq, d_on_ab))
+	
+	# project a onto cd
+	a_on_cd = c + cd.scaled(clamp_zero_to_one(ca.dot(cd) / cd_magnitude_squared))
+	dist_a_sq = (a_on_cd - a).magnitude_squared
+	result.append((dist_a_sq, a))
+	# project b onto cd
+	b_on_cd = c + cd.scaled(clamp_zero_to_one(cb.dot(cd) / cd_magnitude_squared))
+	dist_b_sq = (b_on_cd - b).magnitude_squared
+	result.append((dist_b_sq, b))
+	
+	ab_cross_cd = ab.cross(cd)
+	
+	if ab_cross_cd == 0:
+		# vectors are not linearly independent; ab and cd are parallel and maybe collinear
+		return min(result, key=lambda item:item[0])
+	else:
+		ac = c - a
+		time_1 = ac.cross(cd) / ab_cross_cd
+		time_2 = -ab.cross(ac) / ab_cross_cd
+		if 0 <= time_1 <= 1 and 0 <= time_2 <= 1:
+			return 0, a + ab.scaled(time_1)
+		else:
+			return min(result, key=lambda item:item[0])
+
+
+def global_closest_point_on_linestring_to_line(linestring: LineString, line: LineSegment) -> (float, Vector2):
+	return min((closest_point_on_line_to_line(*item, *line) for item in pairwise(linestring)), key=lambda item: item[0])
+
+
 def offset_linestring(inp: LineString, offset: float) -> LineString:
 	positive_seg, negative_seg = offset_segments(inp, offset)
 	positive = connect_offset_segments(positive_seg)
 	negative = connect_offset_segments(negative_seg)
+	closest_point_on_line_to_line()

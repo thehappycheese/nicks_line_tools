@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from nicks_line_tools.Vector2 import Vector2
 import nicks_line_tools.offset as lt
 
-squig = [
+original: lt.LineString = [
 	Vector2(4.54358180, 5.14493850),
 	Vector2(4.40994720, 5.77970350),
 	Vector2(4.04245150, 5.81311220),
@@ -56,17 +56,31 @@ def plot_Points(ps: List[Vector2], index_label=False, **kwargs):
 			plt.annotate(index, item)
 
 
-plot_LineString(squig, True, color="r")
-offsets = [lt.connect_offset_segments(item) for item in lt.offset_segments(squig, 0.5)]
-for offset_c in offsets:
-	plot_LineString(offset_c, False, color="g")
+plot_LineString(original, True, color="b")
+offset_positive, offset_negative = [
+	lt.connect_offset_segments(item) for item in lt.offset_segments(original, 0.5)
 
-intersects_p = lt.self_intersection(offsets[0])
-intersects_o = lt.intersection(offsets[0], squig)
-intersects_n = lt.intersection(offsets[0], offsets[1])
+]
+plot_LineString(offset_positive, False, color="g")
+plot_LineString(offset_negative, False, color="r")
 
-plot_Points(lt.params_to_points(offsets[0], intersects_o), True, color="tab:grey", zorder=10)
-plot_Points(lt.params_to_points(offsets[0], intersects_p), True, color="tab:blue", zorder=10)
-plot_Points(lt.params_to_points(offsets[0], intersects_n), True, color="tab:purple", zorder=10)
+intersection_parameters = sorted([
+	*((item, 'pos') for item in lt.self_intersection(offset_positive)),
+	*((item, 'org') for item in lt.intersection(offset_positive, original)),
+	*((item, 'neg') for item in lt.intersection(offset_positive, offset_negative))
+])
+
+plot_Points(lt.linestring_params_to_points(offset_positive, [item[0] for item in intersection_parameters if item[1] == "pos"]), False, color="g", zorder=10)
+plot_Points(lt.linestring_params_to_points(offset_positive, [item[0] for item in intersection_parameters if item[1] == "org"]), False, color="b", zorder=10)
+plot_Points(lt.linestring_params_to_points(offset_positive, [item[0] for item in intersection_parameters if item[1] == "neg"]), False, color="r", zorder=10)
+
+split_segments = lt.split_at_parameters(offset_positive, [item[0] for item in intersection_parameters])
+
+filtered_segments = [
+	item for index, item in enumerate(split_segments)
+	if index == 0 or index >= len(intersection_parameters) or (intersection_parameters[index][1] != "org" and intersection_parameters[index - 1][1] != "org")
+]
+for ls in filtered_segments:
+	plot_LineString(ls, False, color="magenta")
 
 plt.show()
