@@ -1,9 +1,12 @@
 # note that the below recipes are already in the popular more_itertools package. However the goal of this package is zero dependencies.
 
 import itertools
+from typing import NewType, Tuple, Any
+
+T = NewType("T", Any)
 
 
-def pairwise(iterable):
+def pairwise(iterable: T) -> Tuple[T, T]:
 	"""s -> (s0,s1), (s1,s2), (s2, s3), ...
 	This function will be replaced by builtin implementation in python 3.10"""
 	a, b = itertools.tee(iterable)
