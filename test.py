@@ -2,8 +2,8 @@ from typing import List
 
 import matplotlib.pyplot as plt
 
-from nicks_line_tools.Vector2 import Vector2
-import nicks_line_tools.offset as lt
+from .Vector2 import Vector2
+from . import offset as lt
 
 original: lt.LineString = [
 	Vector2(4.54358180, 5.14493850),
