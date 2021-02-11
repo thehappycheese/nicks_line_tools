@@ -312,8 +312,9 @@ def global_closest_point_on_linestring_to_line(linestring: LineString, line: Lin
 	return min((closest_point_on_line_to_line(*item, *line) for item in pairwise(linestring)), key=lambda item: item[0])
 
 
-def offset_linestring(inp: LineString, offset: float) -> LineString:
+def linestring_offset(inp: LineString, offset: float) -> LineString:
 	positive_seg, negative_seg = offset_segments(inp, offset)
 	positive = connect_offset_segments(positive_seg)
 	negative = connect_offset_segments(negative_seg)
-	closest_point_on_line_to_line()
+	# TODO: complete the algorithm
+	return positive
