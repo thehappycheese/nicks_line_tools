@@ -103,7 +103,10 @@ def connect_offset_segments(inp: List[LineSegment]) -> LineString:
 		cd = d - c
 		
 		if math.isclose(ab.cross(cd), 0):
-			# consecutive segments are parallel and therefore also collinear
+			# If the cross product of the direction vectors is zero,
+			# consecutive segments are parallel
+			# we know that in the parallel case b==c
+			# therefore we can infer that ab and cd are also collinear,
 			# Case 1
 			result.append(b)
 		else:
