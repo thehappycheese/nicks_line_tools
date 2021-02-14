@@ -19,7 +19,7 @@ ls_offset = linestring_offset(ls, 5)
 ## Limitations:
 
 - No support for arcs
-- No handling of malformed geometry
+- No handling of malformed input geometry
 - Probably cryptic error messages when things go wrong
 
 ## Description of Algorithms
@@ -36,6 +36,8 @@ Implementation loosely inspired by
 
 
 #### Definitions
+
+Type definitions
 ```python
 from typing import List, Tuple
 from nicks_line_tools.Vector2 import Vector2
@@ -45,18 +47,20 @@ LineString = List[Vector2]
 MultiLineString = List[LineString]
 LineSegment = Tuple[Vector2, Vector2]
 LineSegmentList = List[Tuple[Vector2, Vector2]]
+Parameter = float
 
 # declare type of variables used:
 original_ls: LineString
 offset_ls: LineString
 offset_segments: LineSegmentList
 raw_offset_ls: LineString
+```
 
-# define basic operations
-# intersect(tool:LineString, target:LineString) -> (point_of_intersection:Optional[Vector2], distance_along_target:List[float])
-# project(tool:Vector2, target:LineString) -> (nearest_point_on_target_to_tool: Vector2, distance_along_target: float)
-# interpolate(distance_along_target:float, target:LineString) -> (point_on_target: Vector2)
-
+Function Type Definitions (pseudocode)
+```python
+intersect = (tool: LineString, target: LineString) -> (point_of_intersection: Optional[Vector2], distance_along_target: List[Parameter])
+project = (tool: Vector2, target: LineString) -> (nearest_point_on_target_to_tool: Vector2, distance_along_target: Parameter)
+interpolate = (distance_along_target: Parameter, target: LineString) -> (point_on_target: Vector2)
 ```
 
 #### Aim
@@ -69,17 +73,23 @@ Given a `LineString`, call it the `original_ls`; the goal is to find the `offset
 
 2. Offset each `LineSegment` of the `original_ls` by `d`
     1. The resulting `LineSegmentList` is called `offset_segments`
+1. Create an empty `LineString` called `raw_offset_ls`
+1. Append `offset_segments[0][0]` to `raw_offset_ls`
 1. For each `segment[i]` in `offset_segments`
-    1. Merge `segment[i]` with `segment[i+1]` if co-linear,
-    1. extend the `segment[i]` to meet `segment[i+1]`,
-    1. truncate of the `segment[i]` to the intersection with `segment[i+1]`, or
-    1. insert a new segment after `segment[i]`.
+   1. Find the intersection point `ip` of the infinite lines that are collinear with `segment[i]` and `segment[i+1]`
+   1. Merge `segment[i]` with `segment[i+1]`
+      1. if `segment[i]` is co-linear with `segment[i+1]`,
+   1. extend or truncate `segment[i]` to meet `segment[i+1]`,
+      1. if the segments actually touch each other, or
+      1. if the intersection point found by extending `segment[i]` and `segment[i+1]`
+   1. truncate of the `segment[i]` to the intersection with `segment[i+1]`, or
+   1. insert a new segment after `segment[i]`.
 1. TODO: describe the rules used in `connect_offset_segments()`
 1. The resulting `LineString` is called the `raw_offset_ls`
 
 #### Algorithm 4 - Dual Clipping:
 
-6. Repeat Algorithm 1 above but offset in the opposite direction (`-d`);
+6. Repeat Algorithm 1 above but offset the `original_ls` in the opposite direction (`-d`);
     1. The result of this step is called the `twin_offset_ls`
 1. Find the `intersection_points` and `intersection_parameters` between the `raw_offset_ls` and 
     1. `raw_offset_ls`
