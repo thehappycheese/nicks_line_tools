@@ -300,7 +300,7 @@ def closest_point_on_line_to_line(a: Vector2, b: Vector2, c: Vector2, d: Vector2
 	
 	if ab_cross_cd == 0:
 		# vectors are not linearly independent; ab and cd are parallel and maybe collinear
-		return min(result, key=lambda item:item[0])
+		return min(result, key=lambda item: item[0])
 	else:
 		ac = c - a
 		time_1 = ac.cross(cd) / ab_cross_cd
@@ -308,16 +308,40 @@ def closest_point_on_line_to_line(a: Vector2, b: Vector2, c: Vector2, d: Vector2
 		if 0 <= time_1 <= 1 and 0 <= time_2 <= 1:
 			return 0, a + ab.scaled(time_1)
 		else:
-			return min(result, key=lambda item:item[0])
+			return min(result, key=lambda item: item[0])
 
 
 def global_closest_point_on_linestring_to_line(linestring: LineString, line: LineSegment) -> (float, Vector2):
 	return min((closest_point_on_line_to_line(*item, *line) for item in pairwise(linestring)), key=lambda item: item[0])
 
 
-def linestring_offset(inp: LineString, offset: float) -> LineString:
-	positive_seg, negative_seg = offset_segments(inp, offset)
-	positive = connect_offset_segments(positive_seg)
-	negative = connect_offset_segments(negative_seg)
-	# TODO: complete the algorithm
+def linestring_offset(input_linestring: LineString, offset: float) -> LineString:
+	positive_segments, negative_segments = offset_segments(input_linestring, offset)
+	
+	positive_linestring = connect_offset_segments(positive_segments)
+	negative_linestring = connect_offset_segments(negative_segments)
+	
+	intersection_parameters = sorted(
+		self_intersection(positive_linestring) +
+		intersection(positive_linestring, negative_linestring)
+	)
+	intersection_with_original_parameters = sorted(intersection(positive_linestring, input_linestring))
+	
+	offset_positive_split_by_intersections = split_at_parameters(positive_linestring, intersection_parameters)
+	
+	filtered_linestrings: List[LineString] = []
+	filtered_linestrings_to_be_clipped: List[LineString] = []
+	for line_string in offset_positive_split_by_intersections:
+		intersects_with_original = intersection(input_linestring, line_string)
+		if len(intersects_with_original) == 0:
+			if index == 0 or index >= len(intersection_parameters):
+				if len(intersects_with_original) == 0:
+					pass
+				else:
+			
+			else:
+				if intersects_with_original:
+	
+	# Delete parts of filtered_linestrings which
+	
 	return positive

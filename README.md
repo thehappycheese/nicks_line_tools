@@ -7,9 +7,10 @@ This project has no dependencies outside the standard library, and therefore has
 ## Usage
 
 **Note the implementation of the offset algorithm is not yet completed**
+
 ```python
 from nicks_line_tools.Vector2 import Vector2
-from nicks_line_tools.offset import linestring_offset
+from nicks_line_tools.linestring_offset import linestring_offset
 
 ls = [Vector2(1, 1), Vector2(5, 6), Vector2(12, 8)]
 
@@ -99,8 +100,8 @@ Given a `LineString`, call it the `original_ls`; the goal is to find the `offset
 1. The resulting  `MultiLineString` is called `split_offset_mls`
 1. If `intersection_points` is empty, then the result is `raw_offset_ls`. Skip to ##??
 1. Delete each `LineString` in `split_offset_mls` that intersects the `original_ls` unless the intersection is with the first or last `LineSegment` of `original_ls`
-   
-1. For each remaining `item:LineString` in `split_offset_mls` find the global closest point(s?) `P` between the `item` and the `original_ls`
+1.    
+1. For each remaining `item` in `split_offset_mls` find the global closest point(s?) `P` between the `item` and the `original_ls`
     1. For each `point` in `P`
     1. Delete any part of the `raw_offset_line` which is within a circle centered at each `point` in `P`
 1. Join for in Join remaining segments to form new linestring(s)

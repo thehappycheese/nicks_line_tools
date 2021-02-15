@@ -3,7 +3,7 @@ from typing import List
 import matplotlib.pyplot as plt
 
 from .Vector2 import Vector2
-from . import offset as lt
+from . import linestring_offset as lt
 
 original: lt.LineString = [
 	Vector2(4.54358180, 5.14493850),
@@ -59,7 +59,6 @@ def plot_Points(ps: List[Vector2], index_label=False, **kwargs):
 plot_LineString(original, True, color="b")
 offset_positive, offset_negative = [
 	lt.connect_offset_segments(item) for item in lt.offset_segments(original, 0.5)
-
 ]
 plot_LineString(offset_positive, False, color="g")
 plot_LineString(offset_negative, False, color="r")
