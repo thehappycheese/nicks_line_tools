@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import itertools
 import math
 from typing import List
 
@@ -6,6 +8,7 @@ from typing import Optional
 from typing import Tuple
 
 from .Vector2 import Vector2
+from . import interval_tools
 from .nicks_itertools import pairwise
 
 from .util import clamp_zero_to_one
@@ -115,7 +118,7 @@ def connect_offset_segments(inp: List[LineSegment]) -> LineString:
 			result.append(b)
 		else:
 			# Case 2
-			
+			# TODO: test for mitre limit
 			# the following function finds the intersection of two line segments and the coefficients such that:
 			# p = a + t_ab*ab
 			# p = c + t_cd*cd
@@ -139,10 +142,12 @@ def connect_offset_segments(inp: List[LineSegment]) -> LineString:
 			
 			if TIP_ab and TIP_cd:
 				# Case 2a
+				# TODO: test for mitre limit
 				result.append(p)
 			elif FIP_ab and FIP_cd:
 				# Case 2b.
 				if PFIP_ab:
+					# TODO: test for mitre limit
 					result.append(p)
 				else:
 					result.append(b)
@@ -160,7 +165,7 @@ def self_intersection(inp: LineString) -> List[float]:
 	intersection_parameters = []
 	for i, (a, b) in enumerate(pairwise(inp)):
 		for j, (c, d) in enumerate(pairwise(inp[i + 2:])):
-			print(f"{i},{i + 1} against {j + i + 2},{j + i + 1 + 2}")
+			# print(f"{i},{i + 1} against {j + i + 2},{j + i + 1 + 2}")
 			intersection_result = solve_intersection(a, b, c, d)
 			if intersection_result is not None:
 				# TODO: collect p to prevent recalculation?
@@ -305,25 +310,73 @@ def global_closest_point_on_linestring_to_line(linestring: LineString, line: Lin
 	return min((closest_point_on_line_to_line(*item, *line) for item in pairwise(linestring)), key=lambda item: item[0])
 
 
-def remove_circle_from_line(intersection_point: Vector2, offset: float, line_segment: LineSegment) -> List[LineSegment]:
-	c = intersection_point
+def remove_circle_from_linesegment(circle_center: Vector2, radius: float, line_segment: LineSegment) -> Tuple[int, List[LineSegment]]:
+	c = circle_center
 	a, b = line_segment
-	# project c onto ab (line segment)
+	# project c onto ab,
 	ab = b - a
 	ac = c - a
 	ab_magnitude_squared = ab.magnitude_squared
-	c_on_ab = a + ab.scaled(ac.dot(ab) / ab_magnitude_squared)
-	dist_c = (c_on_ab - c).magnitude
-	if dist_c>d:
-		return line_segment
-	else:
-		# find sidepoints with trig?
-	result.append((dist_c_sq, c_on_ab))
-	pass
+	# p is the projection of c onto ab
+	p_scalar = ac.dot(ab) / ab_magnitude_squared
+	p = a + ab.scaled(p_scalar)
+	pc_magnitude_squared = (p - c).magnitude_squared
+	radius_squared = radius * radius
+	
+	if pc_magnitude_squared > radius_squared or math.isclose(pc_magnitude_squared, radius_squared):
+		return interval_tools.SUB_RESULT_ALL, [line_segment]
+	
+	ab_magnitude = math.sqrt(ab_magnitude_squared)
+	half_chord_length_over_ab_mag = math.sqrt(radius_squared - pc_magnitude_squared) / ab_magnitude
+	q_scalar = p_scalar - half_chord_length_over_ab_mag
+	r_scalar = p_scalar + half_chord_length_over_ab_mag
+	
+	relation, intervals = interval_tools.interval_subtraction((0, 1), (q_scalar, r_scalar))
+	return relation, [(a + ab.scaled(interval[0]), a + ab.scaled(interval[1])) for interval in intervals]
 
 
-def remove_circle_from_linestring(intersection_point: Vector2, offset: float, line_string: LineString) -> List[LineSegment]:
-	pass
+def remove_circles_from_linesegment(circle_centers: List[Vector2], radius: float, line_segment: LineSegment) -> Tuple[int, List[LineSegment]]:
+	raise Exception("not implemented")
+
+
+def remove_circle_from_linestring(circle_center: Vector2, radius: float, line_string: LineString) -> List[LineString]:
+	results: List[LineString] = []
+	sub_result: LineString = []
+	
+	for line_segment in pairwise(line_string):
+		relation, segments = remove_circle_from_linesegment(circle_center, radius, line_segment)
+		
+		if relation == interval_tools.SUB_RESULT_ALL:
+			if len(sub_result) == 0:
+				sub_result.append(line_segment[0])
+			sub_result.append(line_segment[1])
+		else:
+			if relation & interval_tools.SUB_RESULT_START:
+				if len(sub_result) == 0:
+					sub_result.append(line_segment[0])
+				sub_result.append(segments[0][1])
+				results.append(sub_result)
+				sub_result = []
+			
+			if relation & interval_tools.SUB_RESULT_END:
+				sub_result.append(segments[-1][0])
+				sub_result.append(line_segment[1])
+	
+	if sub_result:
+		results.append(sub_result)
+	return results
+
+
+def remove_circles_from_linestring(circle_centers: List[Vector2], radius: float, line_string: LineString):
+	# TODO: this will have very poor performance... currently its not used
+	#  to implement it in a single pass though we would need to implement remove_circles_from_linesegment()
+	result = [line_string]
+	for circle_center in circle_centers:
+		new_result = []
+		for ls in result:
+			new_result.extend(remove_circle_from_linestring(circle_center, radius, ls))
+		result = new_result
+	return result
 
 
 def linestring_offset(input_linestring: LineString, offset: float) -> LineString:
@@ -335,12 +388,13 @@ def linestring_offset(input_linestring: LineString, offset: float) -> LineString
 	
 	# Step 1b
 	intersection_parameters = sorted([
-		*(item, 1 for item in self_intersection(positive_linestring)),
-		*(item, -1 for item in intersection(positive_linestring, negative_linestring))
+		*(item for item in self_intersection(positive_linestring)),
+		*(item for item in intersection(positive_linestring, negative_linestring))
 	])
+	offset_positive_split = []
 	if len(intersection_parameters) == 0:
 		# Case 1
-		pass  # TODO: skip
+		filtered_linestrings = positive_segments
 	else:
 		# Case 2
 		
@@ -356,12 +410,18 @@ def linestring_offset(input_linestring: LineString, offset: float) -> LineString
 			else:
 				# Case 2
 				if intersects_with_original:
+					# example:
 					# a linestring of len == 4 has vertices 0 to 3 inclusive, and can have parameters that are between 0 and 3 inclusive
 					# 0------1------2-----------3
-					if all(item < 1 or item > len(line_string) - 1 for item in intersects_with_original):
+					if all(parameter < 1 or parameter > len(input_linestring) - 1 for parameter in intersects_with_original):
 						# all the intersection points are on input_linestring[0] or input_linestring[-1]
 						# TODO: the following line assumes there will be exactly one intersection with the original linestring
-						filtered_linestrings_to_be_clipped.append((linestring_param_to_point(input_linestring, intersects_with_original[0]), line_string))
+						#  seems like it would be straightforward to pass all the points along and cut them all away at once...
+						#  would need to implement remove_circles_from_linestring() to make that work
+						filtered_linestrings_to_be_clipped.append((
+							linestring_param_to_point(positive_linestring, intersects_with_original[0]),
+							line_string
+						))
 					else:
 						pass  # reject linestring
 				else:
@@ -371,4 +431,4 @@ def linestring_offset(input_linestring: LineString, offset: float) -> LineString
 	
 	# Delete parts of filtered_linestrings which
 	
-	return positive_linestring
+	return intersection_parameters, positive_linestring, negative_linestring, filtered_linestrings, offset_positive_split

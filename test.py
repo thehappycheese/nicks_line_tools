@@ -2,10 +2,10 @@ from typing import List
 
 import matplotlib.pyplot as plt
 
-from .Vector2 import Vector2
-from . import linestring_offset as lt
+from nicks_line_tools.Vector2 import Vector2
+from nicks_line_tools.linestring_offset import linestring_offset, LineString, linestring_params_to_points
 
-original: lt.LineString = [
+linestring_to_offset = [
 	Vector2(4.54358180, 5.14493850),
 	Vector2(4.40994720, 5.77970350),
 	Vector2(4.04245150, 5.81311220),
@@ -34,7 +34,7 @@ original: lt.LineString = [
 ]
 
 
-def transpose_vector_list(inp: lt.LineString):
+def transpose_vector_list(inp):
 	out = [[], []]
 	for item in inp:
 		out[0].append(item.x)
@@ -42,44 +42,55 @@ def transpose_vector_list(inp: lt.LineString):
 	return out
 
 
-def plot_LineString(ps: lt.LineString, index_label=False, **kwargs):
+def plot_LineString(plt, ps: LineString, index_label=False, **kwargs):
 	plt.plot(*transpose_vector_list(ps), **kwargs)
 	if index_label:
 		for index, item in enumerate(ps):
 			plt.annotate(index, item)
 
 
-def plot_Points(ps: List[Vector2], index_label=False, **kwargs):
+def plot_Points(plt, ps: List[Vector2], index_label=False, **kwargs):
 	plt.scatter(*transpose_vector_list(ps), **kwargs)
 	if index_label:
 		for index, item in enumerate(ps):
 			plt.annotate(index, item)
 
 
-plot_LineString(original, True, color="b")
-offset_positive, offset_negative = [
-	lt.connect_offset_segments(item) for item in lt.offset_segments(original, 0.5)
-]
-plot_LineString(offset_positive, False, color="g")
-plot_LineString(offset_negative, False, color="r")
+fig, axs = plt.subplots(2)
 
-intersection_parameters = sorted([
-	*((item, 'pos') for item in lt.self_intersection(offset_positive)),
-	*((item, 'org') for item in lt.intersection(offset_positive, original)),
-	*((item, 'neg') for item in lt.intersection(offset_positive, offset_negative))
-])
+params, offset_positive, offset_negative, filtered, splits = linestring_offset(linestring_to_offset, 0.4)
 
-plot_Points(lt.linestring_params_to_points(offset_positive, [item[0] for item in intersection_parameters if item[1] == "pos"]), False, color="g", zorder=10)
-plot_Points(lt.linestring_params_to_points(offset_positive, [item[0] for item in intersection_parameters if item[1] == "org"]), False, color="b", zorder=10)
-plot_Points(lt.linestring_params_to_points(offset_positive, [item[0] for item in intersection_parameters if item[1] == "neg"]), False, color="r", zorder=10)
+for ax in axs:
+	plot_LineString(ax, linestring_to_offset, False, color="dimgrey")
+	# plot_LineString(offset_positive, False, color="grey")
+	plot_LineString(ax, offset_negative, False, color="grey")
+	
+	points = linestring_params_to_points(offset_positive, params)
+	plot_Points(ax, points)
 
-split_segments = lt.split_at_parameters(offset_positive, [item[0] for item in intersection_parameters])
+for linestring, color in zip(splits, ["brown", "darkorange", "teal", "olivedrab", "goldenrod", "seagreen", "royalblue", "rebeccapurple", "mediumvioletred", "dodgerblue", "firebrick", "gray", "brown", "darkorange", "teal", "olivedrab", "goldenrod", "seagreen", "royalblue", ]):
+	plot_LineString(axs[0], linestring, False, color=color)
 
-filtered_segments = [
-	item for index, item in enumerate(split_segments)
-	if index == 0 or index >= len(intersection_parameters) or (intersection_parameters[index][1] != "org" and intersection_parameters[index - 1][1] != "org")
-]
-for ls in filtered_segments:
-	plot_LineString(ls, False, color="magenta")
+
+for linestring, color in zip(filtered, ["brown", "darkorange", "teal", "olivedrab", "goldenrod", "seagreen", "royalblue", "rebeccapurple", "mediumvioletred", "dodgerblue", "firebrick", "gray", "brown", "darkorange", "teal", "olivedrab", "goldenrod", "seagreen", "royalblue", ]):
+	plot_LineString(axs[1], linestring, False, color=color)
 
 plt.show()
+
+
+def test_circle_cutter():
+	ls = [
+		Vector2(-1, 4),
+		Vector2(2, 2),
+		Vector2(4, 5),
+		Vector2(5, 4),
+		Vector2(4, -2)
+	]
+	print(ls)
+	
+	center = Vector2(3, 2)
+	radius = 2
+	
+	for segment in pairwise(ls):
+		print(remove_circle_from_linesegment(center, radius, segment))
+	print(remove_circle_from_linestring(center, radius, ls))
