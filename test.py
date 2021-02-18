@@ -3,8 +3,10 @@ from typing import List
 import matplotlib.pyplot as plt
 
 from nicks_line_tools.Vector2 import Vector2
-from nicks_line_tools.linestring_offset import linestring_offset, LineString, linestring_params_to_points
+from nicks_line_tools.linestring_offset import linestring_offset, linestring_params_to_points
+from nicks_line_tools.type_aliases import LineString
 
+TEST_OFFSET = 0.4
 linestring_to_offset = [
 	Vector2(4.54358180, 5.14493850),
 	Vector2(4.40994720, 5.77970350),
@@ -33,6 +35,16 @@ linestring_to_offset = [
 	Vector2(7.58377290, 1.26952970)
 ]
 
+# tests tip cut
+# TEST_OFFSET = -0.4
+# linestring_to_offset = [
+# 	Vector2(2.26785710, -4.01599690),
+# 	Vector2(6.49646560, -5.48065480),
+# 	Vector2(7.91387630, -0.92131696),
+# 	Vector2(7.44140620, -0.54334076),
+# 	Vector2(3.14192700, -4.39397320)
+# ]
+
 
 def transpose_vector_list(inp):
 	out = [[], []]
@@ -56,24 +68,29 @@ def plot_Points(plt, ps: List[Vector2], index_label=False, **kwargs):
 			plt.annotate(index, item)
 
 
-fig, axs = plt.subplots(2)
+fig, axs = plt.subplots(3)
 
-params, offset_positive, offset_negative, filtered, splits = linestring_offset(linestring_to_offset, 0.4)
+params, offset_positive, offset_negative, filtered, splits, closest_point_clipped_linestrings, closest_points_for_plot = linestring_offset(linestring_to_offset, TEST_OFFSET)
 
 for ax in axs:
 	plot_LineString(ax, linestring_to_offset, False, color="dimgrey")
 	# plot_LineString(offset_positive, False, color="grey")
-	plot_LineString(ax, offset_negative, False, color="grey")
+	# plot_LineString(ax, offset_negative, False, color="grey")
 	
 	points = linestring_params_to_points(offset_positive, params)
 	plot_Points(ax, points)
 
-for linestring, color in zip(splits, ["brown", "darkorange", "teal", "olivedrab", "goldenrod", "seagreen", "royalblue", "rebeccapurple", "mediumvioletred", "dodgerblue", "firebrick", "gray", "brown", "darkorange", "teal", "olivedrab", "goldenrod", "seagreen", "royalblue", ]):
+for linestring, color in zip(splits, ["brown", "darkorange", "teal", "olivedrab", "goldenrod", "seagreen", "royalblue", "rebeccapurple", "mediumvioletred", "dodgerblue", "firebrick", "brown", "darkorange", "teal", "olivedrab", "goldenrod", "seagreen", "royalblue", ]):
 	plot_LineString(axs[0], linestring, False, color=color)
 
-
-for linestring, color in zip(filtered, ["brown", "darkorange", "teal", "olivedrab", "goldenrod", "seagreen", "royalblue", "rebeccapurple", "mediumvioletred", "dodgerblue", "firebrick", "gray", "brown", "darkorange", "teal", "olivedrab", "goldenrod", "seagreen", "royalblue", ]):
+for linestring, color in zip(filtered, ["brown", "darkorange", "teal", "olivedrab", "goldenrod", "seagreen", "royalblue", "rebeccapurple", "mediumvioletred", "dodgerblue", "firebrick", "brown", "darkorange", "teal", "olivedrab", "goldenrod", "seagreen", "royalblue", ]):
 	plot_LineString(axs[1], linestring, False, color=color)
+
+for linestring, color in zip(closest_point_clipped_linestrings, ["brown", "darkorange", "teal", "olivedrab", "goldenrod", "seagreen", "royalblue", "rebeccapurple", "mediumvioletred", "dodgerblue", "firebrick", "brown", "darkorange", "teal", "olivedrab", "goldenrod", "seagreen", "royalblue", ]):
+	plot_LineString(axs[2], linestring, False, color=color)
+
+for point in closest_points_for_plot:
+	axs[2].add_patch(plt.Circle(point, TEST_OFFSET, fill=False, linewidth=1))
 
 plt.show()
 

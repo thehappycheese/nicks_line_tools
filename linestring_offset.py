@@ -3,18 +3,16 @@ from __future__ import annotations
 import math
 from typing import List
 
-from typing import Optional
 from typing import Tuple
 
 from .Vector2 import Vector2
-from .linestring_remove_circle import linestring_remove_circle
+from .linestring_intersection import linesegment_intersection, self_intersection, intersection
+from .linestring_projection import project_point_onto_linestring
+from .linestring_remove_circle import linestring_remove_circle, remove_circles_from_linestring
 from .nicks_itertools import pairwise
+from .type_aliases import LineSegment, LineString
 
 from .util import clamp_zero_to_one
-
-# Define some type aliases to shorten type declarations
-LineSegment = Tuple[Vector2, Vector2]
-LineString = List[Vector2]
 
 
 def offset_segments(inp: LineString, offset: float) -> Tuple[List[LineSegment], List[LineSegment]]:
@@ -25,76 +23,6 @@ def offset_segments(inp: LineString, offset: float) -> Tuple[List[LineSegment], 
 		segments_positive.append((a + offset_vector, b + offset_vector))
 		segments_negative.append((a - offset_vector, b - offset_vector))
 	return segments_positive, segments_negative
-
-
-def solve_intersection(a: Vector2, b: Vector2, c: Vector2, d: Vector2) -> Optional[Tuple[Vector2, float, float]]:
-	# computes the intersection between two line segments; a to b, and c to d
-	
-	ab = b - a
-	cd = d - c
-	
-	# The intersection of segments is expressed as a parametric equation
-	# where t1 and t2 are unknown scalars
-	# note that a real intersection can only happen when 0<=t1<=1 and 0<=t2<=1,
-	# a + ab·t1 = c + cd·t2
-	
-	# This can be rearranged as follows:
-	# ab·t1 - cd·t2 = c - a
-	
-	# by collecting the scalars t1 and -t2 into the column vector T,
-	# and by collecting the vectors ab and cd into matrix M:
-	# we get the matrix form:
-	# [ab_x  cd_x][ t1] = [ac_x]
-	# [ab_y  cd_y][-t2]   [ac_y]
-	# or
-	# M·T=ac
-	
-	# the determinant of the matrix M is the inverse of the cross product of ab and cd.
-	# 1/(ab×cd)
-	# Therefore if ab×cd=0 the determinant is undefined and the matrix cannot be inverted
-	# This means the lines are
-	#   a) parallel and
-	#   b) possibly collinear
-	
-	# pre-multiplying both sides by the inverted 2x2 matrix we get:
-	# [ t1] = 1/(ab×cd)·[ cd_y  -cd_x][ac_x]
-	# [-t2]             [-ab_y   ab_x][ac_y]
-	# or
-	# T = M⁻¹·ac
-	
-	# multiplied out
-	# [t1] = 1/(ab_x·cd_y - ab_y·cd_x)·[ cd_y·ac_x - cd_x·ac_y]
-	# [t2]                             [-ab_y·ac_x + ab_x·ac_y]
-	
-	# since it is neat to write cross products in python code, observe that the above is equivalent to:
-	# [t1] = [ ac×cd / ab×cd ]
-	# [t2] = [ ab×ac / ab×cd ]
-	
-	ab_cross_cd = ab.cross(cd)
-	
-	if ab_cross_cd == 0:
-		# TODO: this can also happen if either vector is the Zero vector.
-		# vectors are not linearly independent; ab and cd are parallel
-		# segments are collinear if ac is parallel to ab
-		# ac ∥ ab
-		# or more conveniently if ac is perpendicular to the left normal of ab
-		# ac ⟂ (ab⟂)
-		# the left normal of ab = [-ab_y]
-		#                         [ ab_x]
-		# dot product of perpendicular vectors is zero:
-		# if ab.left.dot(ac) == 0:
-		# 	# segments are collinear
-		# 	# TODO: we can compute the range over which t1 and t2 produce an overlap, if any, here. Doesnt seem to be needed for now.
-		# else:
-		# 	# segments are parallel
-		# 	return None
-		
-		return None
-	else:
-		ac = c - a
-		time_1 = ac.cross(cd) / ab_cross_cd
-		time_2 = -ab.cross(ac) / ab_cross_cd
-		return a + ab.scaled(time_1), time_1, time_2
 
 
 def connect_offset_segments(inp: List[LineSegment]) -> LineString:
@@ -122,7 +50,7 @@ def connect_offset_segments(inp: List[LineSegment]) -> LineString:
 			# p = a + t_ab*ab
 			# p = c + t_cd*cd
 			# note that t_ab and t_cd are between 0 and 1 when p lies within their respective line segments.
-			p, t_ab, t_cd = solve_intersection(a, b, c, d)
+			p, t_ab, t_cd = linesegment_intersection(a, b, c, d)
 			
 			# TIP means 'true intersection point' : ie. the intersection point lies within the segment.
 			# FIP means 'false intersection point' : ie the intersection point lies outside the segment.
@@ -158,59 +86,6 @@ def connect_offset_segments(inp: List[LineSegment]) -> LineString:
 	
 	result.append(d)  # noqa
 	return result
-
-
-def self_intersection(inp: LineString) -> List[float]:
-	intersection_parameters = []
-	for i, (a, b) in enumerate(pairwise(inp)):
-		for j, (c, d) in enumerate(pairwise(inp[i + 2:])):
-			# print(f"{i},{i + 1} against {j + i + 2},{j + i + 1 + 2}")
-			intersection_result = solve_intersection(a, b, c, d)
-			if intersection_result is not None:
-				# TODO: collect p to prevent recalculation?
-				p, t1, t2 = intersection_result
-				if 0 <= t1 <= 1 and 0 <= t2 <= 1:
-					param_1 = i + t1
-					param_2 = j + i + 2 + t2
-					print((param_1, param_2))
-					intersection_parameters.append(param_1)
-					intersection_parameters.append(param_2)
-	last_item = float("inf")
-	output = []
-	for item in sorted(intersection_parameters):
-		if not math.isclose(last_item, item):
-			output.append(item)
-			last_item = item
-	
-	return output
-
-
-def intersection(target: LineString, tool: LineString) -> List[float]:
-	"""will return a list of parameters for the target where the tool intersects the target. Parameters are a floating point number where
-	0.0 <= parameter <= len(linestring)-1.0
-	Parameters that are rounded to the nearest integer are the same as the index of target. Intermediate values represent the interpolated point between vertices on the target linestring."""
-	intersection_parameters = []
-	for i, (a, b) in enumerate(pairwise(target)):
-		for j, (c, d) in enumerate(pairwise(tool)):
-			print(f"{i},{i + 1} against {j + i + 2},{j + i + 1 + 2}")
-			intersection_result = solve_intersection(a, b, c, d)
-			if intersection_result is not None:
-				# TODO: collect p to prevent recalculation?
-				p, t1, t2 = intersection_result
-				if 0 <= t1 <= 1 and 0 <= t2 <= 1:
-					param_1 = i + t1
-					
-					print(param_1)
-					intersection_parameters.append(param_1)
-	
-	last_item = float("inf")
-	output = []
-	for item in sorted(intersection_parameters):
-		if not math.isclose(last_item, item):
-			output.append(item)
-			last_item = item
-	
-	return output
 
 
 def split_at_parameters(inp: LineString, params: List[float]):
@@ -305,8 +180,24 @@ def closest_point_on_line_to_line(a: Vector2, b: Vector2, c: Vector2, d: Vector2
 			return min(result, key=lambda item: item[0])
 
 
-def global_closest_point_on_linestring_to_line(linestring: LineString, line: LineSegment) -> (float, Vector2):
+def closest_point_on_linestring_to_line(linestring: LineString, line: LineSegment) -> (float, Vector2):
+	"""the closest point linestring to line, and the distance_squared"""
+	# key si required since second member of tuples (Vector2) are not comparable with <
 	return min((closest_point_on_line_to_line(*item, *line) for item in pairwise(linestring)), key=lambda item: item[0])
+
+
+def closest_point_pairs(target: LineString, tool: LineString, filter_distance: float):
+	"""Return all points on 'target' that are closest point pairs with the segments of 'tool' which are less than filter distance"""
+	result = []
+	filter_distance_sq = filter_distance*filter_distance
+	for point in tool:
+		# todo... more efficient to project linestring onto linestring... reimplement
+		raise Exception("The problem is with this next line... we need all the projected points that are <= offset distance... not just the last found.")
+		distance_sq, point = project_point_onto_linestring(target, point)
+		#if distance_sq < filter_distance_sq and not math.isclose(distance_sq, filter_distance_sq):
+		if distance_sq <= filter_distance_sq:
+			result.append(point)
+	return result
 
 
 def linestring_offset(input_linestring: LineString, offset: float) -> LineString:
@@ -357,8 +248,17 @@ def linestring_offset(input_linestring: LineString, offset: float) -> LineString
 				else:
 					filtered_linestrings.append(line_string)
 		for intersection_point, line_string in filtered_linestrings_to_be_clipped:
+			# TODO: devise test. not sure what this does exactly.
 			filtered_linestrings.extend(linestring_remove_circle(intersection_point, offset, line_string))
 	
 	# Delete parts of filtered_linestrings which
+	closest_points_for_plot = []
+	closest_point_clipped_linestrings = []
+	for linestring in filtered_linestrings:
+		closest_points = closest_point_pairs(input_linestring, linestring, offset)
+		closest_points_for_plot.extend(closest_points)
+		closest_point_clipped_linestrings.extend(
+			remove_circles_from_linestring(closest_points, offset, linestring)
+		)
 	
-	return intersection_parameters, positive_linestring, negative_linestring, filtered_linestrings, offset_positive_split
+	return intersection_parameters, positive_linestring, negative_linestring, filtered_linestrings, offset_positive_split, closest_point_clipped_linestrings, closest_points_for_plot

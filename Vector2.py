@@ -83,3 +83,11 @@ class Vector2:
 		# allows components to be expanded by the spread operator (*)
 		yield self._x
 		yield self._y
+
+	def __getitem__(self, item):
+		if item==0:
+			return self._x
+		elif item==1:
+			return self._y
+		else:
+			raise IndexError("Vector2 object can only be indexed with 0 and 1")

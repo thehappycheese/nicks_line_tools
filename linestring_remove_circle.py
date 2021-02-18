@@ -3,7 +3,7 @@ from typing import Tuple, List
 
 from nicks_line_tools import interval_tools
 from nicks_line_tools.Vector2 import Vector2
-from nicks_line_tools.linestring_offset import LineSegment, LineString
+from nicks_line_tools.type_aliases import LineSegment, LineString
 from nicks_line_tools.nicks_itertools import pairwise
 
 
@@ -14,6 +14,10 @@ def remove_circle_from_linesegment(circle_center: Vector2, radius: float, line_s
 	ab = b - a
 	ac = c - a
 	ab_magnitude_squared = ab.magnitude_squared
+	if ab_magnitude_squared == 0:
+		# TODO: prevent this call from happening
+		print("prevent zero length input")
+		return interval_tools.SUB_RESULT_NONE, []
 	# p is the projection of c onto ab
 	p_scalar = ac.dot(ab) / ab_magnitude_squared
 	p = a + ab.scaled(p_scalar)
@@ -33,6 +37,9 @@ def remove_circle_from_linesegment(circle_center: Vector2, radius: float, line_s
 
 
 def remove_circles_from_linesegment(circle_centers: List[Vector2], radius: float, line_segment: LineSegment) -> Tuple[int, List[LineSegment]]:
+	# TODO: to efficiently implement this, we would need to implement interval_tools. subtract_intervals_from_interval()
+	#  which is as good as pythons sorted() function for large inputs... but for small inputs the line sweep algorithm would still dominate.
+	#  Probably would be better than the while-loop-recursive function currently used
 	raise Exception("not implemented")
 
 
@@ -65,7 +72,7 @@ def linestring_remove_circle(circle_center: Vector2, radius: float, line_string:
 
 
 def remove_circles_from_linestring(circle_centers: List[Vector2], radius: float, line_string: LineString):
-	# TODO: this will have very poor performance... currently its not used
+	# TODO: this will have very poor performance...
 	#  to implement it in a single pass though we would need to implement remove_circles_from_linesegment()
 	result = [line_string]
 	for circle_center in circle_centers:
