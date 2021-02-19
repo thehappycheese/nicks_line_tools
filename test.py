@@ -1,3 +1,4 @@
+import itertools
 from typing import List
 
 import matplotlib.pyplot as plt
@@ -68,10 +69,10 @@ def plot_Points(plt, ps: List[Vector2], index_label=False, **kwargs):
 			plt.annotate(index, item)
 
 
-fig, axs = plt.subplots(3)
+fig, axs = plt.subplots(2, 2)
 
 params, offset_positive, offset_negative, filtered, splits, closest_point_clipped_linestrings, closest_points_for_plot = linestring_offset(linestring_to_offset, TEST_OFFSET)
-
+axs = [*itertools.chain(axs[0],axs[1])]
 for ax in axs:
 	plot_LineString(ax, linestring_to_offset, False, color="dimgrey")
 	# plot_LineString(offset_positive, False, color="grey")
@@ -91,6 +92,11 @@ for linestring, color in zip(closest_point_clipped_linestrings, ["brown", "darko
 
 for point in closest_points_for_plot:
 	axs[2].add_patch(plt.Circle(point, TEST_OFFSET, fill=False, linewidth=1))
+
+closest_point_clipped_linestrings_pos = closest_point_clipped_linestrings
+params, offset_positive, offset_negative, filtered, splits, closest_point_clipped_linestrings, closest_points_for_plot = linestring_offset(linestring_to_offset, -TEST_OFFSET)
+for linestring in itertools.chain(closest_point_clipped_linestrings, closest_point_clipped_linestrings_pos):
+	plot_LineString(axs[3], linestring, False, color="red")
 
 plt.show()
 

@@ -7,6 +7,7 @@ from typing import Tuple
 
 from .Vector2 import Vector2
 from .linestring_intersection import linesegment_intersection, self_intersection, intersection
+from .linestring_measure import linestring_measure
 from .linestring_projection import project_point_onto_linestring
 from .linestring_remove_circle import linestring_remove_circle, remove_circles_from_linestring
 from .nicks_itertools import pairwise
@@ -189,14 +190,25 @@ def closest_point_on_linestring_to_line(linestring: LineString, line: LineSegmen
 def closest_point_pairs(target: LineString, tool: LineString, filter_distance: float):
 	"""Return all points on 'target' that are closest point pairs with the segments of 'tool' which are less than filter distance"""
 	result = []
-	filter_distance_sq = filter_distance*filter_distance
-	for point in tool:
-		# todo... more efficient to project linestring onto linestring... reimplement
-		raise Exception("The problem is with this next line... we need all the projected points that are <= offset distance... not just the last found.")
-		distance_sq, point = project_point_onto_linestring(target, point)
-		#if distance_sq < filter_distance_sq and not math.isclose(distance_sq, filter_distance_sq):
-		if distance_sq <= filter_distance_sq:
-			result.append(point)
+	filter_distance_sq = filter_distance * filter_distance
+	
+	for a, b in pairwise(target):
+		ab = b - a
+		ab_magnitude_squared = ab.magnitude_squared
+		for c, d in pairwise(tool):
+			ad = d - a
+			ac = c - a
+			
+			# project c onto ab
+			c_on_ab = a + ab.scaled(clamp_zero_to_one(ac.dot(ab) / ab_magnitude_squared))
+			dist_c_sq = (c_on_ab - c).magnitude_squared
+			if dist_c_sq <= filter_distance_sq or math.isclose(dist_c_sq, filter_distance_sq):
+				result.append(c_on_ab)
+			# project d onto ab
+			d_on_ab = a + ab.scaled(clamp_zero_to_one(ad.dot(ab) / ab_magnitude_squared))
+			dist_d_sq = (d_on_ab - d).magnitude_squared
+			if dist_d_sq <= filter_distance_sq or math.isclose(dist_d_sq, filter_distance_sq):
+				result.append(d_on_ab)
 	return result
 
 
