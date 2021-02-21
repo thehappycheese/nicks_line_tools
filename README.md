@@ -23,14 +23,18 @@ ls_offset = linestring_offset(ls, 5)
 - No handling of malformed input geometry
 - Probably cryptic error messages when things go wrong
 
-## Description of Algorithms
-### linestring_interpolate()
-
-### linestring_offset()
+## References
 
 Implementation loosely inspired by
 [Xu-Zheng Liu, Jun-Hai Yong, Guo-Qin Zheng, Jia-Guang Sun. An offset algorithm for polyline curves. Computers in Industry, Elsevier, 2007, 15p. inria-00518005](https://hal.inria.fr/inria-00518005/document)
+This was the first google result for 'line offset algorithm'
 
+> Having implemented the paper as close as I can, I am not impressed.
+> The algorithm is described poorly, and the examples in the diagrams have been
+> cherry-picked to avoid edge-cases which this approach does not deal with.
+> To be fair, the goals of the authors may have been to compromise correctness to reduce complexity.
+> I did not implement algorithms 2 and 3, as they dealt with curved (arc) segments
+> Algorithm 0.5 and 1 are a good starting point for future experiments perhaps.
 
 
 
@@ -51,7 +55,7 @@ LineSegmentList = List[Tuple[Vector2, Vector2]]
 Parameter = float
 
 # declare type of variables used:
-original_ls: LineString
+input_linestring: LineString
 offset_ls: LineString
 offset_segments: LineSegmentList
 raw_offset_ls: LineString
@@ -65,46 +69,85 @@ interpolate = (distance_along_target: Parameter, target: LineString) -> (point_o
 ```
 
 #### Aim
-Given a `LineString`, call it the `original_ls`; the goal is to find the `offset_ls` which is parallel to `original_ls` and offset by the distance `d`
+Given a `LineString`, call it the `input_linestring`; the goal is to find the `offset_ls` which is parallel to `input_linestring` and offset by the distance `d`
 
-#### Algorithm 0 - Pre-Treatment
+
+#### Algorithm 0.0 - Pre-Treatment
 1. Pretreatment steps are **not implemented**... these mostly deal with arcs and malformed input geometry
+1. No check is performed to prevent execution when `d==0`
+
+
+#### Algorithm 0.1 - Segment Offset
+2. Create an empty `LineSegmentList` called `offset_segments`
+1. For each `LineSegment` of `input_linestring`
+   1. Take each segment `(a,b)` of `input_linestring` and compute the vector from the start to the end of the segment<br/>
+      `ab = b - a`
+   1. rotate this vector by -90 degrees to obtain the 'left normal'<br/>
+      `ab_left = Vector2(-ab.y, ab.x)`
+   1. normalise `ab_left` by dividing each component by the magnitude of `ab_left`.
+   1. multiply the vector by the scalar `d` to obtain the `segment_offset_vector`
+   1. add the `segment_offset_vector` to `a` and `b` to get `offset_a` and `offset_b`
+   1. append `(offset_a, offset_b)` to `offset_segments`
+
 
 #### Algorithm 1 - Line Extension
-
-2. Offset each `LineSegment` of the `original_ls` by `d`
-    1. The resulting `LineSegmentList` is called `offset_segments`
-1. Create an empty `LineString` called `raw_offset_ls`
+4. Create an empty `LineString` called `raw_offset_ls`
 1. Append `offset_segments[0][0]` to `raw_offset_ls`
-1. For each `segment[i]` in `offset_segments`
-   1. Find the intersection point `ip` of the infinite lines that are collinear with `segment[i]` and `segment[i+1]`
-   1. Merge `segment[i]` with `segment[i+1]`
-      1. if `segment[i]` is co-linear with `segment[i+1]`,
-   1. extend or truncate `segment[i]` to meet `segment[i+1]`,
-      1. if the segments actually touch each other, or
-      1. if the intersection point found by extending `segment[i]` and `segment[i+1]`
-   1. truncate of the `segment[i]` to the intersection with `segment[i+1]`, or
-   1. insert a new segment after `segment[i]`.
-1. TODO: describe the rules used in `connect_offset_segments()`
-1. The resulting `LineString` is called the `raw_offset_ls`
+1. For each pair of consecutive segments `(a,b),(c,d)` in `offset_segments`
+   1. If `(a,b)` is co-linear with `(c,d)` then append `b` to raw_offset_ls, and go to the next pair of segments.
+   1. Otherwise, find the intersection point `p` of the infinite lines that are collinear with `(a,b)` and `(c,d)`;<br>
+      Pay attention to the location of `p` relative to each of the segments:
+      1. if `p` is within the segment it is a *True Intersection Point* or **TIP**
+      1. If `p` is outside the segment it is called a *False Intersection Point* of **FIP**.<br/>
+         **FIP**s are further classified  as follows:
+         - **Positive FIP** or **PFIP** if `p` is after the end of a segment, or
+         - **Negative FIP** or **NFIP** if `p` is before the start of a segment.
+   1. If `p` is a **TIP** for both `(a,b)` and `(c,d)` append `p` to `raw_offset_ls`
+   1. If `p` is a **FIP** for both `(a,b)` and `(c,d)`
+      1. If `p` is a **PFIP** for `(a,b)` then append `p`to `raw_offset_ls`
+      1. Otherwise, append `b` then `c` to `raw_offset_ls`
+   1. Otherwise, append `b` then `c` to `raw_offset_ls`
+1. Remove zero length segments in `raw_offset_ls`
 
-#### Algorithm 4 - Dual Clipping:
+>Note: mitre limits are not mentioned in the original paper and have not been implemented in this package (yet).
+> Extending line segments that are close to parallel will generate an intersection point far from the origin 
+> which would cause problems with floating-point precision.
 
-6. Repeat Algorithm 1 above but offset the `original_ls` in the opposite direction (`-d`);
-    1. The result of this step is called the `twin_offset_ls`
-1. Find the `intersection_points` and `intersection_parameters` between the `raw_offset_ls` and 
-    1. `raw_offset_ls`
-    1. `original_ls`
-    1. `twin_offset_ls`
-    
-1. The resulting  `MultiLineString` is called `split_offset_mls`
-1. If `intersection_points` is empty, then the result is `raw_offset_ls`. Skip to ##??
-1. Delete each `LineString` in `split_offset_mls` that intersects the `original_ls` unless the intersection is with the first or last `LineSegment` of `original_ls`
-1.    
-1. For each remaining `item` in `split_offset_mls` find the global closest point(s?) `P` between the `item` and the `original_ls`
-    1. For each `point` in `P`
-    1. Delete any part of the `raw_offset_line` which is within a circle centered at each `point` in `P`
-1. Join for in Join remaining segments to form new linestring(s)
+> TODO: It should be possible to maintain a partial mapping between the segments of  `input_ls` and
+
+#### Algorithm 4.1 - Dual Clipping:
+8. Find `raw_offset_ls_twin` by repeating Algorithms 0.1 and 1 but offset the `input_linestring` in the opposite direction (`-d`)
+1. Find `intersection_points` between
+   1. `raw_offset_ls` and `raw_offset_ls`
+   1. `raw_offset_ls` and `raw_offset_ls_twin`
+
+1. Find `split_offset_mls` by splitting `raw_offset_ls` at each point in `intersection_points`
+1. If `intersection_points` was empty, then add `raw_offset_ls` to `split_offset_mls` and skip to Algorithm 4.2.
+1. Delete each `LineString` in `split_offset_mls` if it intersects the `input_linestring`<br>
+   unless the intersection is with the first or last `LineSegment` of `input_linestring`
+   1. If we find such an intersection point that *is* on the first or last `LineSegment` of `input_linestring`<br/>
+   then add the intersection point to a list called `cut_targets`
+
+#### Algorithm 4.1.2 - Cookie Cutter:
+13. For each point `p` in `cut_targets`
+   1. construct a circle of diameter `d` with its center at `p`
+   1. delete all parts of any linestring in `split_offset_mls` which falls within this circle
+1. Empty the `cut_targets` list
+
+### Algorithm 4.1.3 - Proximity Clipping
+17. For each linestring `item_ls` in `split_offset_mls`
+    1. For each segment `(a,b)` in `item_ls`
+       1. For each segment `(u,v)` of `input_linestring`
+          - Find `a_proj` and `b_proj` by projecting `a` and `b` onto segment `(u,v)`
+          - Adjust the projected points such that `a_proj` and `b_proj` lie **at** or **between** `u` and `v`
+          - Find `a_dist` by computing `magnitude(a_proj - a)`
+          - Find `b_dist` by computing `magnitude(b_proj - b)`
+          - if either `a_dist` or `b_dist` is less than the absolute value of `d` then
+            - if `a_dist > b_dist`add `a_proj` to `cut_targets`
+            - Otherwise, add `b_proj` to `cut_targets`  
+1. Repeat Algorithm 4.1.2
+1. Remove zero length segments and empty linestrings etc **(TODO: not yet implemented)** 
+1. Join remaining linestrings that are touching to form new linestring(s) **(TODO: not yet implemented)**
 
 
 

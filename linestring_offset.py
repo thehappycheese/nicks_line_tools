@@ -16,7 +16,7 @@ from .type_aliases import LineSegment, LineString
 from .util import clamp_zero_to_one
 
 
-def offset_segments(inp: LineString, offset: float) -> Tuple[List[LineSegment], List[LineSegment]]:
+def linestring_offset_segments(inp: LineString, offset: float) -> Tuple[List[LineSegment], List[LineSegment]]:
 	segments_positive: List[LineSegment] = []
 	segments_negative: List[LineSegment] = []
 	for a, b in zip(inp, inp[1:]):
@@ -187,10 +187,18 @@ def closest_point_on_linestring_to_line(linestring: LineString, line: LineSegmen
 	return min((closest_point_on_line_to_line(*item, *line) for item in pairwise(linestring)), key=lambda item: item[0])
 
 
+def less_than_or_close_to(a, b):
+	return a < b or math.isclose(a, b)
+
+
+def less_than_and_not_close_to(a, b):
+	return a < b and not math.isclose(a, b)
+
+
 def closest_point_pairs(target: LineString, tool: LineString, filter_distance: float):
 	"""Return all points on 'target' that are closest point pairs with the segments of 'tool' which are less than filter distance"""
 	result = []
-	filter_distance_sq = filter_distance * filter_distance
+	filter_distance_sq = filter_distance * filter_distance  # note that this also takes the absolute value of filter_distance
 	
 	for a, b in pairwise(target):
 		ab = b - a
@@ -202,22 +210,30 @@ def closest_point_pairs(target: LineString, tool: LineString, filter_distance: f
 			# project c onto ab
 			c_on_ab = a + ab.scaled(clamp_zero_to_one(ac.dot(ab) / ab_magnitude_squared))
 			dist_c_sq = (c_on_ab - c).magnitude_squared
-			if dist_c_sq <= filter_distance_sq or math.isclose(dist_c_sq, filter_distance_sq):
-				result.append(c_on_ab)
+			# if dist_c_sq <= filter_distance_sq or math.isclose(dist_c_sq, filter_distance_sq):
+			# result.append(c_on_ab)
+			
 			# project d onto ab
 			d_on_ab = a + ab.scaled(clamp_zero_to_one(ad.dot(ab) / ab_magnitude_squared))
 			dist_d_sq = (d_on_ab - d).magnitude_squared
-			if dist_d_sq <= filter_distance_sq or math.isclose(dist_d_sq, filter_distance_sq):
-				result.append(d_on_ab)
+			# if dist_d_sq <= filter_distance_sq or math.isclose(dist_d_sq, filter_distance_sq):
+			# result.append(d_on_ab)
+			
+			if less_than_and_not_close_to(dist_c_sq, filter_distance_sq) or less_than_and_not_close_to(dist_d_sq, filter_distance_sq):
+				if dist_d_sq < dist_c_sq:
+					result.append(c_on_ab)
+				else:
+					result.append(d_on_ab)
+	
 	return result
 
 
-def linestring_offset(input_linestring: LineString, offset: float) -> LineString:
-	positive_segments, negative_segments = offset_segments(input_linestring, offset)
+def linestring_offset(input_linestring: LineString, d: float) -> LineString:
+	offset_segments, offset_segments_twin = linestring_offset_segments(input_linestring, d)
 	
 	# Step 1a
-	positive_linestring = connect_offset_segments(positive_segments)
-	negative_linestring = connect_offset_segments(negative_segments)
+	positive_linestring = connect_offset_segments(offset_segments)
+	negative_linestring = connect_offset_segments(offset_segments_twin)
 	
 	# Step 1b
 	intersection_parameters = sorted([
@@ -227,7 +243,7 @@ def linestring_offset(input_linestring: LineString, offset: float) -> LineString
 	offset_positive_split = []
 	if len(intersection_parameters) == 0:
 		# Case 1
-		filtered_linestrings = positive_segments
+		filtered_linestrings = [positive_linestring]
 	else:
 		# Case 2
 		
@@ -261,16 +277,16 @@ def linestring_offset(input_linestring: LineString, offset: float) -> LineString
 					filtered_linestrings.append(line_string)
 		for intersection_point, line_string in filtered_linestrings_to_be_clipped:
 			# TODO: devise test. not sure what this does exactly.
-			filtered_linestrings.extend(linestring_remove_circle(intersection_point, offset, line_string))
+			filtered_linestrings.extend(linestring_remove_circle(intersection_point, d, line_string))
 	
 	# Delete parts of filtered_linestrings which
 	closest_points_for_plot = []
 	closest_point_clipped_linestrings = []
 	for linestring in filtered_linestrings:
-		closest_points = closest_point_pairs(input_linestring, linestring, offset)
+		closest_points = closest_point_pairs(input_linestring, linestring, d)
 		closest_points_for_plot.extend(closest_points)
 		closest_point_clipped_linestrings.extend(
-			remove_circles_from_linestring(closest_points, offset, linestring)
+			remove_circles_from_linestring(closest_points, d, linestring)
 		)
 	
 	return intersection_parameters, positive_linestring, negative_linestring, filtered_linestrings, offset_positive_split, closest_point_clipped_linestrings, closest_points_for_plot
