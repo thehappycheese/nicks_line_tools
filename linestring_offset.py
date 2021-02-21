@@ -7,13 +7,14 @@ from typing import Tuple
 
 from .Vector2 import Vector2
 from .linestring_intersection import linesegment_intersection, self_intersection, intersection
-from .linestring_measure import linestring_measure
-from .linestring_projection import project_point_onto_linestring
+from .linestring_parameters import linestring_param_to_point
+from .linestring_parameters import split_at_parameters
 from .linestring_remove_circle import linestring_remove_circle, remove_circles_from_linestring
 from .nicks_itertools import pairwise
 from .type_aliases import LineSegment, LineString
 
 from .util import clamp_zero_to_one
+from .util import less_than_and_not_close_to
 
 
 def linestring_offset_segments(inp: LineString, offset: float) -> Tuple[List[LineSegment], List[LineSegment]]:
@@ -87,112 +88,6 @@ def connect_offset_segments(inp: List[LineSegment]) -> LineString:
 	
 	result.append(d)  # noqa
 	return result
-
-
-def split_at_parameters(inp: LineString, params: List[float]):
-	output: List[LineString] = []
-	accumulator: LineString = [inp[0]]
-	index = 0
-	for param in params:
-		
-		while param > index + 1:
-			accumulator.append(inp[index + 1])
-			index += 1
-		
-		a = inp[index]
-		b = inp[index + 1]
-		
-		cut_point = a + (b - a).scaled(param - index)
-		accumulator.append(cut_point)
-		output.append(accumulator)
-		if math.isclose(param - index, 1):
-			accumulator = []
-		else:
-			accumulator = [cut_point]
-	
-	index += 1
-	
-	while index < len(inp):
-		accumulator.append(inp[index])
-		index += 1
-	
-	output.append(accumulator)
-	
-	return output
-
-
-def linestring_param_to_point(linestring: LineString, param: float):
-	a = linestring[math.floor(param)]
-	b = linestring[math.ceil(param)]
-	return a + (b - a).scaled(param % 1)
-
-
-def linestring_params_to_points(linestring: LineString, params: List[float]):
-	return list(linestring_param_to_point(linestring, param) for param in params)
-
-
-def closest_point_on_line_to_line(a: Vector2, b: Vector2, c: Vector2, d: Vector2) -> (float, Vector2):
-	"""the closest point on ab to cd, and the distance_squared"""
-	ab = b - a
-	cd = d - c
-	
-	ab_magnitude_squared = ab.magnitude_squared
-	cd_magnitude_squared = cd.magnitude_squared
-	
-	# TODO: handle zero vectors?
-	
-	ac = c - a
-	ad = d - a
-	ca = a - c
-	cb = b - c
-	
-	result = []
-	
-	# project c onto ab
-	c_on_ab = a + ab.scaled(clamp_zero_to_one(ac.dot(ab) / ab_magnitude_squared))
-	dist_c_sq = (c_on_ab - c).magnitude_squared
-	result.append((dist_c_sq, c_on_ab))
-	# project d onto ab
-	d_on_ab = a + ab.scaled(clamp_zero_to_one(ad.dot(ab) / ab_magnitude_squared))
-	dist_d_sq = (d_on_ab - d).magnitude_squared
-	result.append((dist_d_sq, d_on_ab))
-	
-	# project a onto cd
-	a_on_cd = c + cd.scaled(clamp_zero_to_one(ca.dot(cd) / cd_magnitude_squared))
-	dist_a_sq = (a_on_cd - a).magnitude_squared
-	result.append((dist_a_sq, a))
-	# project b onto cd
-	b_on_cd = c + cd.scaled(clamp_zero_to_one(cb.dot(cd) / cd_magnitude_squared))
-	dist_b_sq = (b_on_cd - b).magnitude_squared
-	result.append((dist_b_sq, b))
-	
-	ab_cross_cd = ab.cross(cd)
-	
-	if ab_cross_cd == 0:
-		# vectors are not linearly independent; ab and cd are parallel and maybe collinear
-		return min(result, key=lambda item: item[0])
-	else:
-		ac = c - a
-		time_1 = ac.cross(cd) / ab_cross_cd
-		time_2 = -ab.cross(ac) / ab_cross_cd
-		if 0 <= time_1 <= 1 and 0 <= time_2 <= 1:
-			return 0, a + ab.scaled(time_1)
-		else:
-			return min(result, key=lambda item: item[0])
-
-
-def closest_point_on_linestring_to_line(linestring: LineString, line: LineSegment) -> (float, Vector2):
-	"""the closest point linestring to line, and the distance_squared"""
-	# key si required since second member of tuples (Vector2) are not comparable with <
-	return min((closest_point_on_line_to_line(*item, *line) for item in pairwise(linestring)), key=lambda item: item[0])
-
-
-def less_than_or_close_to(a, b):
-	return a < b or math.isclose(a, b)
-
-
-def less_than_and_not_close_to(a, b):
-	return a < b and not math.isclose(a, b)
 
 
 def closest_point_pairs(target: LineString, tool: LineString, filter_distance: float):

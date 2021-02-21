@@ -4,7 +4,8 @@ from typing import List
 import matplotlib.pyplot as plt
 
 from nicks_line_tools.Vector2 import Vector2
-from nicks_line_tools.linestring_offset import linestring_offset, linestring_params_to_points
+from nicks_line_tools.linestring_offset import linestring_offset
+from nicks_line_tools.linestring_parameters import linestring_params_to_points
 from nicks_line_tools.type_aliases import LineString
 
 TEST_OFFSET = 0.4

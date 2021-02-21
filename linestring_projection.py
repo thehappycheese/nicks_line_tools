@@ -3,7 +3,6 @@ from typing import Tuple
 from nicks_line_tools.Vector2 import Vector2
 from nicks_line_tools.nicks_itertools import pairwise
 from nicks_line_tools.type_aliases import LineString
-from nicks_line_tools.util import clamp_zero_to_one
 
 
 def scalar_projection_of_point_onto_line(a: Vector2, b: Vector2, p: Vector2) -> float:
@@ -19,11 +18,11 @@ def scalar_projection_of_point_onto_line_segment(a: Vector2, b: Vector2, p: Vect
 	ab = b - a
 	ap = p - a
 	t = ap.dot(ab) / ab.dot(ab)
-	t = clamp_zero_to_one(t)
-	return t
+	return max(0.0, min(1.0, t))
 
 
 def project_point_onto_linestring(target: LineString, tool: Vector2) -> Tuple[float, Vector2]:
+	"""project tool onto target and return an point on target that is the minimum distance from the tool. This function does not deal with multiple minimums and simply returns an arbitrary minimum"""
 	min_mag_squared = float('inf')
 	point = None
 	
@@ -34,7 +33,7 @@ def project_point_onto_linestring(target: LineString, tool: Vector2) -> Tuple[fl
 		ab = b - a
 		ac = c - a
 		# p is the projection of c onto ab
-		p_scalar = clamp_zero_to_one(ac.dot(ab) / ab.magnitude_squared)
+		p_scalar = max(0.0, min(1.0, ac.dot(ab) / ab.magnitude_squared))
 		p = a + ab.scaled(p_scalar)
 		pc_magnitude_squared = (p - c).magnitude_squared
 		if min_mag_squared > pc_magnitude_squared:
