@@ -24,6 +24,7 @@ def scalar_projection_of_point_onto_line_segment(a: Vector2, b: Vector2, p: Vect
 
 
 def project_point_onto_linestring(target: LineString, tool: Vector2) -> Tuple[float, Vector2]:
+	"""returns the distance to the linestring, and the point on the line"""
 	min_mag_squared = float('inf')
 	point = None
 	
@@ -41,3 +42,29 @@ def project_point_onto_linestring(target: LineString, tool: Vector2) -> Tuple[fl
 			point = p
 			min_mag_squared = pc_magnitude_squared
 	return min_mag_squared, point
+
+
+def project_point_onto_linestring_distance_along(target: LineString, tool: Vector2) -> Tuple[float, Vector2, float]:
+	"""returns the distance to the linestring (squared), and the point on the line, and the distance along the line"""
+	min_mag_squared = float('inf')
+	dist_along_at_min_mag_squared = None
+	point = None
+	dist_along_so_far = 0
+	for segment in pairwise(target):
+		c = tool
+		a, b = segment
+		# project c onto ab,
+		ab = b - a
+		ac = c - a
+		ab_magnitude = ab.magnitude
+		# p is the projection of c onto ab, clamped between a and b
+		p_scalar = clamp_zero_to_one(ac.dot(ab) / ab.magnitude_squared)
+		p = a + ab.scaled(p_scalar)
+		pc_magnitude_squared = (p - c).magnitude_squared
+		if min_mag_squared > pc_magnitude_squared:
+			point = p
+			min_mag_squared = pc_magnitude_squared
+			dist_along_at_min_mag_squared = dist_along_so_far+p_scalar*ab_magnitude
+		dist_along_so_far += ab_magnitude
+		
+	return min_mag_squared, point, dist_along_at_min_mag_squared
