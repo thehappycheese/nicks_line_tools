@@ -12,7 +12,7 @@ def linestring_measure(linestring: List[Vector2]) -> Tuple[List[Tuple[Vector2, f
 		ab_len = (b - a).magnitude
 		result.append((a, ab_len))
 		total_length += ab_len
-	result.append((b, None))
+	result.append((b, 0))
 	return result, total_length
 
 
@@ -26,3 +26,4 @@ def linestring_measure_sq(linestring: List[Vector2]) -> Tuple[List[Tuple[Vector2
 		total_length += ab_len
 	result.append((b, None))
 	return result, total_length
+
