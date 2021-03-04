@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import List
+from typing import List, Union
 
 from typing import Tuple
 
@@ -228,7 +228,7 @@ def closest_point_pairs(target: LineString, tool: LineString, filter_distance: f
 	return result
 
 
-def linestring_offset(input_linestring: LineString, d: float) -> LineString:
+def linestring_offset(input_linestring: LineString, d: float) -> List[LineString]:
 	offset_segments, offset_segments_twin = linestring_offset_segments(input_linestring, d)
 	
 	# Step 1a
@@ -289,4 +289,4 @@ def linestring_offset(input_linestring: LineString, d: float) -> LineString:
 			remove_circles_from_linestring(closest_points, d, linestring)
 		)
 	
-	return intersection_parameters, positive_linestring, negative_linestring, filtered_linestrings, offset_positive_split, closest_point_clipped_linestrings, closest_points_for_plot
+	return closest_point_clipped_linestrings
