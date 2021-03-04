@@ -1,36 +1,33 @@
 import math
-
-from nicks_line_tools.linestring_interpolate import linestring_interpolate
+from typing import Optional, Tuple
 from nicks_line_tools.linestring_measure import linestring_measure
+from nicks_line_tools.nicks_itertools import pairwise
 from nicks_line_tools.type_aliases import LineString
 
 
-def linestring_cut(linestring: LineString, normalised_distance_along: float):
-	# Cuts a line in two at a distance from its starting point
+def linestring_cut(linestring: LineString, normalised_distance_along: float) -> Tuple[Optional[LineString], Optional[LineString]]:
+	"""cut linestring at normalised distance along and returns a pair of linestrings"""
 	measured_linestring, total_length = linestring_measure(linestring)
 	distance_along = total_length * normalised_distance_along
 	
-	if distance_along <= 0.0:
+	if distance_along < 0.0 or math.isclose(distance_along, 0):
 		return None, linestring
-	if distance_along >= total_length:
+	if distance_along > total_length or math.isclose(distance_along, total_length):
 		return linestring, None
 	else:
-		projected_distance_of_vertex = 0
-		for index, (vertex, segment_length) in enumerate(measured_linestring):
-			if math.isclose(projected_distance_of_vertex, distance_along):
+		distance_remaining = distance_along
+		for index, ((a, segment_length), (b, _)) in enumerate(pairwise(measured_linestring)):
+			if math.isclose(0, distance_remaining):
 				return (
 					linestring[:index + 1],
 					linestring[index:]
 				)
-			if projected_distance_of_vertex > distance_along:
-				a = linestring[index],
-				b = linestring[index+1]
-				new_vertex_at_cut = linestring_interpolate(
-					linestring,
-					distance_along
-				)
+			elif distance_remaining < segment_length:
+				ab = b - a
+				intermediate_point = ab / segment_length * distance_remaining
+				
 				return (
-					LineString(linestring_coordinates[:index] + [(new_vertex_at_cut.x, new_vertex_at_cut.y)]),
-					LineString([(new_vertex_at_cut.x, new_vertex_at_cut.y)] + linestring_coordinates[index:])
+					linestring[:index+1] + [intermediate_point],
+					[intermediate_point] + linestring[index+1:]
 				)
-			projected_distance_of_vertex += segment_length
+			distance_remaining -= segment_length
