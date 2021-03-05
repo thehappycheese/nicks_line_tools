@@ -88,7 +88,7 @@ def self_intersection(inp: LineString) -> List[float]:
 				if 0 <= t1 <= 1 and 0 <= t2 <= 1:
 					param_1 = i + t1
 					param_2 = j + i + 2 + t2
-					print((param_1, param_2))
+					# print((param_1, param_2))
 					intersection_parameters.append(param_1)
 					intersection_parameters.append(param_2)
 	last_item = float("inf")
@@ -108,7 +108,7 @@ def intersection(target: LineString, tool: LineString) -> List[float]:
 	intersection_parameters = []
 	for i, (a, b) in enumerate(pairwise(target)):
 		for j, (c, d) in enumerate(pairwise(tool)):
-			print(f"{i},{i + 1} against {j + i + 2},{j + i + 1 + 2}")
+			# print(f"{i},{i + 1} against {j + i + 2},{j + i + 1 + 2}")
 			intersection_result = linesegment_intersection(a, b, c, d)
 			if intersection_result is not None:
 				# TODO: collect p to prevent recalculation?

@@ -4,7 +4,7 @@ from nicks_line_tools.Vector2 import Vector2
 from nicks_line_tools.type_aliases import LineString
 from util.convert_metres_to_degrees import convert_metres_to_degrees
 
-SNAP_TOLERANCE_SQ = convert_metres_to_degrees(0.5) ** 2
+SNAP_TOLERANCE_SQ = convert_metres_to_degrees(0.8) ** 2
 
 
 def vector_close(a: Vector2, b: Vector2):

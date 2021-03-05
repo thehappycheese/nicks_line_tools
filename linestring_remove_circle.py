@@ -16,7 +16,7 @@ def remove_circle_from_linesegment(circle_center: Vector2, radius: float, line_s
 	ab_magnitude_squared = ab.magnitude_squared
 	if ab_magnitude_squared == 0:
 		# TODO: prevent this call from happening
-		print("prevent zero length input")
+		# print("prevent zero length input")
 		return interval_tools.SUB_RESULT_NONE, []
 	# p is the projection of c onto ab
 	p_scalar = ac.dot(ab) / ab_magnitude_squared
