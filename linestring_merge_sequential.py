@@ -1,4 +1,3 @@
-import math
 from typing import List
 
 from nicks_line_tools.Vector2 import Vector2
