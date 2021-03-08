@@ -1,6 +1,8 @@
 # note that the below recipes are already in the popular more_itertools package. However the goal of this package is zero dependencies.
-
+import collections.abc
 import itertools
+from typing import Iterable
+from typing import Iterator
 from typing import NewType, Tuple, Any
 
 T = NewType("T", Any)
@@ -12,6 +14,13 @@ def pairwise(iterable: T) -> Tuple[T, T]:
 	a, b = itertools.tee(iterable)
 	next(b, None)
 	return zip(a, b)
+
+
+def consecutive_disjoint_pairs(iterable: Iterable[T]) -> Iterator[Tuple[T, T]]:
+	"""[1,2,3,4,5] -> ( (1,2), (3,4) )"""
+	m = iterable if isinstance(iterable, collections.abc.Iterator) else iter(iterable)
+	for a, b in zip(m, m):
+		yield a, b
 
 
 def grouper(iterable, n, fillvalue=None):
