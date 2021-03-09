@@ -15,15 +15,3 @@ def linestring_measure(linestring: List[Vector2]) -> Tuple[List[Tuple[Vector2, f
 	result.append((b, 0))
 	return result, total_length
 
-
-def linestring_measure_sq(linestring: List[Vector2]) -> Tuple[List[Tuple[Vector2, float]], float]:
-	""":returns: ([(point:vector, dist_to_next_point:float), ...], total_length:float)"""
-	result = []
-	total_length = 0
-	for a, b in pairwise(linestring):
-		ab_len = (b - a).magnitude_squared
-		result.append((a, ab_len))
-		total_length += ab_len
-	result.append((b, None))
-	return result, total_length
-

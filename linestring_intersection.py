@@ -66,6 +66,7 @@ def linesegment_intersection(a: Vector2, b: Vector2, c: Vector2, d: Vector2) -> 
 		# 	# TODO: we can compute the range over which t1 and t2 produce an overlap, if any, here. Doesnt seem to be needed for now.
 		# else:
 		# 	# segments are parallel
+		#   # there is no possible solution result.
 		# 	return None
 		
 		return None
@@ -76,7 +77,7 @@ def linesegment_intersection(a: Vector2, b: Vector2, c: Vector2, d: Vector2) -> 
 		return a + ab.scaled(time_1), time_1, time_2
 
 
-def self_intersection(inp: LineString) -> List[float]:
+def linestring_intersection_with_self(inp: LineString) -> List[float]:
 	intersection_parameters = []
 	for i, (a, b) in enumerate(pairwise(inp)):
 		for j, (c, d) in enumerate(pairwise(inp[i + 2:])):
@@ -101,7 +102,7 @@ def self_intersection(inp: LineString) -> List[float]:
 	return output
 
 
-def intersection(target: LineString, tool: LineString) -> List[float]:
+def linestring_intersection(target: LineString, tool: LineString) -> List[float]:
 	"""will return a list of parameters for the target where the tool intersects the target. Parameters are a floating point number where
 	0.0 <= parameter <= len(linestring)-1.0
 	Parameters that are rounded to the nearest integer are the same as the index of target. Intermediate values represent the interpolated point between vertices on the target linestring."""

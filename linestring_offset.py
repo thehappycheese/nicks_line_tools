@@ -6,7 +6,7 @@ from typing import List, Union
 from typing import Tuple
 
 from .Vector2 import Vector2
-from .linestring_intersection import linesegment_intersection, self_intersection, intersection
+from .linestring_intersection import linesegment_intersection, linestring_intersection_with_self, linestring_intersection
 from .linestring_measure import linestring_measure
 from .linestring_projection import project_point_onto_linestring
 from .linestring_remove_circle import linestring_remove_circle, remove_circles_from_linestring
@@ -237,8 +237,8 @@ def linestring_offset(input_linestring: LineString, d: float) -> List[LineString
 	
 	# Step 1b
 	intersection_parameters = sorted([
-		*(item for item in self_intersection(positive_linestring)),
-		*(item for item in intersection(positive_linestring, negative_linestring))
+		*(item for item in linestring_intersection_with_self(positive_linestring)),
+		*(item for item in linestring_intersection(positive_linestring, negative_linestring))
 	])
 	offset_positive_split = []
 	if len(intersection_parameters) == 0:
@@ -252,7 +252,7 @@ def linestring_offset(input_linestring: LineString, d: float) -> List[LineString
 		filtered_linestrings: List[LineString] = []
 		filtered_linestrings_to_be_clipped: List[Tuple[Vector2, LineString]] = []
 		for line_string in offset_positive_split:
-			intersects_with_original = intersection(input_linestring, line_string)
+			intersects_with_original = linestring_intersection(input_linestring, line_string)
 			if len(intersects_with_original) == 0:
 				# Case 1
 				filtered_linestrings.append(line_string)
