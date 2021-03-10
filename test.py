@@ -7,6 +7,7 @@ from nicks_line_tools.Vector2 import Vector2
 from nicks_line_tools.linestring_measure import linestring_measure
 from nicks_line_tools.linestring_offset import linestring_offset, linestring_params_to_points
 from nicks_line_tools.linestring_remove_circle import remove_circles_from_linestring_2
+from nicks_line_tools.nicks_itertools import pairwise
 from nicks_line_tools.type_aliases import LineString
 
 TEST_OFFSET = 0.4
@@ -78,7 +79,7 @@ offset_positive = linestring_offset(linestring_to_offset, TEST_OFFSET)
 plot_LineString(plt, linestring_to_offset, False, color="dimgrey")
 for ls in offset_positive:
 	plot_LineString(plt, ls, False, color="grey")
-plt.show()
+#plt.show()
 
 
 
@@ -90,5 +91,11 @@ def test_remove_circles_from_linestring():
 	c = [Vector2(a, b) for a, b in [[-1.98, 4.51], [-0.9, 9.55], [0.98, 9.43], [6.18, 4.19], [2.22, 1.31], [4.74, 7.39], [-6.678259236067627, 2.8118659987476518]]]
 	r = 2
 	res = remove_circles_from_linestring_2(linestring_measure(a), c, r)
-	print(res)
+	result = []
+	for ls in res:
+		for a,b in pairwise(ls):
+			result.append(f"Segment(({a.x},{a.y}),({b.x},{b.y}))")
+	print(result)
+	#print("\r\n".join(result))
+	
 test_remove_circles_from_linestring()

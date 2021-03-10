@@ -112,7 +112,7 @@ def remove_circles_from_linestring_2(measured_linestring: MeasuredLineString, ci
 				result_linestrings.append(list(last_segment))
 			
 		
-		return result_linestrings
+	return result_linestrings
 
 
 def linestring_remove_circle(circle_center: Vector2, radius: float, line_string: LineString) -> List[LineString]:
