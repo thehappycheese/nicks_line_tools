@@ -5,6 +5,7 @@ from nicks_line_tools import interval_tools
 from nicks_line_tools.Vector2 import Vector2
 from nicks_line_tools.type_aliases import LineSegment, LineString
 from nicks_line_tools.nicks_itertools import pairwise
+from nicks_line_tools.type_aliases import MeasuredLineString
 
 
 def remove_circle_from_linesegment(circle_center: Vector2, radius: float, line_segment: LineSegment) -> Tuple[int, List[LineSegment]]:
@@ -36,11 +37,55 @@ def remove_circle_from_linesegment(circle_center: Vector2, radius: float, line_s
 	return relation, [(a + ab.scaled(interval[0]), a + ab.scaled(interval[1])) for interval in intervals]
 
 
-def remove_circles_from_linesegment(circle_centers: List[Vector2], radius: float, line_segment: LineSegment) -> Tuple[int, List[LineSegment]]:
-	# TODO: to efficiently implement this, we would need to implement interval_tools. subtract_intervals_from_interval()
-	#  which is as good as pythons sorted() function for large inputs... but for small inputs the line sweep algorithm would still dominate.
-	#  Probably would be better than the while-loop-recursive function currently used
-	raise Exception("not implemented")
+def remove_circles_from_linesegment(line_segment: LineSegment, line_segment_length: float, circle_centers: List[Vector2], radius: float) -> Tuple[Tuple[float, float], List[LineSegment]]:
+	# TODO: make work with measured linestring
+	# TODO: make pass in radius squared
+	a, b = line_segment
+	ab = b - a
+	ab_magnitude_squared = ab.magnitude_squared
+	ab_magnitude = math.sqrt(ab_magnitude_squared)
+	radius_squared = radius * radius
+	if ab_magnitude_squared == 0:
+		raise Exception("must prevent zero length input to remove_circles_from_linesegment")
+	intervals_to_subtract = []
+	for circle_center in circle_centers:
+		# project circle_center onto ab,
+		ac = circle_center - a
+		p_scalar = ac.dot(ab) / ab_magnitude_squared
+		p = a + ab.scaled(p_scalar)
+		pc_magnitude_squared = (p - circle_center).magnitude_squared
+		if pc_magnitude_squared > radius_squared or math.isclose(pc_magnitude_squared, radius_squared):
+			continue
+		half_chord_length_over_ab_mag = math.sqrt(radius_squared - pc_magnitude_squared) / ab_magnitude
+		intervals_to_subtract.append((
+			p_scalar - half_chord_length_over_ab_mag,
+			p_scalar + half_chord_length_over_ab_mag
+		))
+	intervals_to_return = interval_tools.interval_subtract_multiinterval((0, 1), intervals_to_subtract)
+	return (intervals_to_subtract[0][0], intervals_to_subtract[-1][1]), [(a + ab.scaled(interval[0]), a + ab.scaled(interval[1])) for interval in intervals_to_return]
+
+
+#raise Exception("start work here")
+def remove_circles_from_linestring_2(measured_linestring: MeasuredLineString, circle_centers: List[Vector2], radius: float, ):
+	"""Second version of this operation that is much more optimised"""
+	result_linestring = []
+	current_linestring = []
+	for (a, ab_length), (b, _) in pairwise(measured_linestring):
+		(first_parameter, last_parameter), line_segments = remove_circles_from_linesegment((a, b), ab_length, circle_centers, radius)
+		if first_parameter != 0:
+			result_linestring.append(current_linestring)
+			if
+			current_linestring = []
+		
+			
+	
+	result = [measured_linestring]
+	for circle_center in circle_centers:
+		new_result = []
+		for ls in result:
+			new_result.extend(linestring_remove_circle(circle_center, radius, ls))
+		result = new_result
+	return result
 
 
 def linestring_remove_circle(circle_center: Vector2, radius: float, line_string: LineString) -> List[LineString]:
