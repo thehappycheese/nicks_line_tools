@@ -65,8 +65,9 @@ def remove_circles_from_linesegment(line_segment: LineSegment, line_segment_leng
 	return (intervals_to_subtract[0][0], intervals_to_subtract[-1][1]), [(a + ab.scaled(interval[0]), a + ab.scaled(interval[1])) for interval in intervals_to_return]
 
 
-#raise Exception("start work here")
+
 def remove_circles_from_linestring_2(measured_linestring: MeasuredLineString, circle_centers: List[Vector2], radius: float, ):
+	raise Exception("start work here")
 	"""Second version of this operation that is much more optimised"""
 	result_linestring = []
 	current_linestring = []
@@ -74,7 +75,6 @@ def remove_circles_from_linestring_2(measured_linestring: MeasuredLineString, ci
 		(first_parameter, last_parameter), line_segments = remove_circles_from_linesegment((a, b), ab_length, circle_centers, radius)
 		if first_parameter != 0:
 			result_linestring.append(current_linestring)
-			if
 			current_linestring = []
 		
 			
