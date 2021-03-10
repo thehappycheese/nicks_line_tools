@@ -65,27 +65,54 @@ def remove_circles_from_linesegment(line_segment: LineSegment, line_segment_leng
 	return (intervals_to_subtract[0][0], intervals_to_subtract[-1][1]), [(a + ab.scaled(interval[0]), a + ab.scaled(interval[1])) for interval in intervals_to_return]
 
 
-
-def remove_circles_from_linestring_2(measured_linestring: MeasuredLineString, circle_centers: List[Vector2], radius: float, ):
-	raise Exception("start work here")
-	"""Second version of this operation that is much more optimised"""
-	result_linestring = []
+def remove_circles_from_linestring_2(measured_linestring: MeasuredLineString, circle_centers: List[Vector2], radius: float):
+	"""Second version of this operation that is substantially optimised"""
+	result_linestrings = []
 	current_linestring = []
-	for (a, ab_length), (b, _) in pairwise(measured_linestring):
-		(first_parameter, last_parameter), line_segments = remove_circles_from_linesegment((a, b), ab_length, circle_centers, radius)
-		if first_parameter != 0:
-			result_linestring.append(current_linestring)
-			current_linestring = []
-		
-			
 	
-	result = [measured_linestring]
-	for circle_center in circle_centers:
-		new_result = []
-		for ls in result:
-			new_result.extend(linestring_remove_circle(circle_center, radius, ls))
-		result = new_result
-	return result
+	for (a, ab_length), (b, _) in pairwise(measured_linestring[0]):
+		(first_parameter, last_parameter), line_segments = remove_circles_from_linesegment((a, b), ab_length, circle_centers, radius)
+		
+		if not line_segments:
+			# nothing to add
+			continue
+		elif len(line_segments) == 1:
+			if first_parameter != 0:
+				if current_linestring:
+					result_linestrings.append(current_linestring)
+					current_linestring = []
+				current_linestring.append(line_segments[0][0])
+			current_linestring.append(line_segments[0][1])
+			if last_parameter != 1:
+				result_linestrings.append(current_linestring)
+				current_linestring = []
+		else:
+			first_segment = line_segments[0]
+			middle_segments = line_segments[1:-1]
+			last_segment = line_segments[-1]
+			
+			if first_parameter == 0:
+				if current_linestring:
+					current_linestring.append(first_segment[1])
+				else:
+					current_linestring.extend(first_segment)
+				result_linestrings.append(current_linestring)
+				current_linestring = []
+			else:
+				if current_linestring:
+					result_linestrings.append(current_linestring)
+					current_linestring = []
+				result_linestrings.append(list(first_segment))
+			
+			result_linestrings.extend(list(item) for item in middle_segments)
+			
+			if last_parameter==1:
+				current_linestring.extend(last_segment)
+			else:
+				result_linestrings.append(list(last_segment))
+			
+		
+		return result_linestrings
 
 
 def linestring_remove_circle(circle_center: Vector2, radius: float, line_string: LineString) -> List[LineString]:

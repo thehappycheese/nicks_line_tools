@@ -4,7 +4,9 @@ from typing import List
 import matplotlib.pyplot as plt
 
 from nicks_line_tools.Vector2 import Vector2
+from nicks_line_tools.linestring_measure import linestring_measure
 from nicks_line_tools.linestring_offset import linestring_offset, linestring_params_to_points
+from nicks_line_tools.linestring_remove_circle import remove_circles_from_linestring_2
 from nicks_line_tools.type_aliases import LineString
 
 TEST_OFFSET = 0.4
@@ -35,6 +37,7 @@ linestring_to_offset = [
 	Vector2(7.24750790, 2.77565770),
 	Vector2(7.58377290, 1.26952970)
 ]
+
 
 # tests tip cut
 # TEST_OFFSET = -0.4
@@ -69,51 +72,23 @@ def plot_Points(plt, ps: List[Vector2], index_label=False, **kwargs):
 			plt.annotate(index, item)
 
 
-fig, axs = plt.subplots(2, 2)
+offset_positive = linestring_offset(linestring_to_offset, TEST_OFFSET)
+# axs = [*itertools.chain(axs[0], axs[1])]
 
-params, offset_positive, offset_negative, filtered, splits, closest_point_clipped_linestrings, closest_points_for_plot = linestring_offset(linestring_to_offset, TEST_OFFSET)
-axs = [*itertools.chain(axs[0],axs[1])]
-for ax in axs:
-	plot_LineString(ax, linestring_to_offset, False, color="dimgrey")
-	# plot_LineString(offset_positive, False, color="grey")
-	# plot_LineString(ax, offset_negative, False, color="grey")
-	
-	points = linestring_params_to_points(offset_positive, params)
-	plot_Points(ax, points)
-
-for linestring, color in zip(splits, ["brown", "darkorange", "teal", "olivedrab", "goldenrod", "seagreen", "royalblue", "rebeccapurple", "mediumvioletred", "dodgerblue", "firebrick", "brown", "darkorange", "teal", "olivedrab", "goldenrod", "seagreen", "royalblue", ]):
-	plot_LineString(axs[0], linestring, False, color=color)
-
-for linestring, color in zip(filtered, ["brown", "darkorange", "teal", "olivedrab", "goldenrod", "seagreen", "royalblue", "rebeccapurple", "mediumvioletred", "dodgerblue", "firebrick", "brown", "darkorange", "teal", "olivedrab", "goldenrod", "seagreen", "royalblue", ]):
-	plot_LineString(axs[1], linestring, False, color=color)
-
-for linestring, color in zip(closest_point_clipped_linestrings, ["brown", "darkorange", "teal", "olivedrab", "goldenrod", "seagreen", "royalblue", "rebeccapurple", "mediumvioletred", "dodgerblue", "firebrick", "brown", "darkorange", "teal", "olivedrab", "goldenrod", "seagreen", "royalblue", ]):
-	plot_LineString(axs[2], linestring, False, color=color)
-
-for point in closest_points_for_plot:
-	axs[2].add_patch(plt.Circle(point, TEST_OFFSET, fill=False, linewidth=1))
-
-closest_point_clipped_linestrings_pos = closest_point_clipped_linestrings
-params, offset_positive, offset_negative, filtered, splits, closest_point_clipped_linestrings, closest_points_for_plot = linestring_offset(linestring_to_offset, -TEST_OFFSET)
-for linestring in itertools.chain(closest_point_clipped_linestrings, closest_point_clipped_linestrings_pos):
-	plot_LineString(axs[3], linestring, False, color="red")
-
+plot_LineString(plt, linestring_to_offset, False, color="dimgrey")
+for ls in offset_positive:
+	plot_LineString(plt, ls, False, color="grey")
 plt.show()
 
 
-def test_circle_cutter():
-	ls = [
-		Vector2(-1, 4),
-		Vector2(2, 2),
-		Vector2(4, 5),
-		Vector2(5, 4),
-		Vector2(4, -2)
-	]
-	print(ls)
-	
-	center = Vector2(3, 2)
-	radius = 2
-	
-	for segment in pairwise(ls):
-		print(remove_circle_from_linesegment(center, radius, segment))
-	print(remove_circle_from_linestring(center, radius, ls))
+
+
+
+
+def test_remove_circles_from_linestring():
+	a = [Vector2(a, b) for a, b in [[-8.86, 0.99], [-4.98, 4.23], [2.86, 2.95], [4.66, 4.03], [3.34, 6.39], [1.98, 7.39], [-2.34, 7.79]]]
+	c = [Vector2(a, b) for a, b in [[-1.98, 4.51], [-0.9, 9.55], [0.98, 9.43], [6.18, 4.19], [2.22, 1.31], [4.74, 7.39], [-6.678259236067627, 2.8118659987476518]]]
+	r = 2
+	res = remove_circles_from_linestring_2(linestring_measure(a), c, r)
+	print(res)
+test_remove_circles_from_linestring()
