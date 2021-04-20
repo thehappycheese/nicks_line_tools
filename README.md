@@ -29,18 +29,17 @@ Implementation loosely inspired by
 [Xu-Zheng Liu, Jun-Hai Yong, Guo-Qin Zheng, Jia-Guang Sun. An offset algorithm for polyline curves. Computers in Industry, Elsevier, 2007, 15p. inria-00518005](https://hal.inria.fr/inria-00518005/document)
 This was the first google result for 'line offset algorithm'
 
-> Having implemented the paper as close as I can, I am not impressed.
-> The algorithm is described poorly, and the examples in the diagrams have been
-> cherry-picked to avoid edge-cases which this approach does not deal with.
-> To be fair, the goals of the authors may have been to compromise correctness to reduce complexity.
-> I did not implement algorithms 2 and 3, as they dealt with curved (arc) segments
-> Algorithm 0.5 and 1 are a good starting point for future experiments perhaps.
+> Having implemented the paper as close as I can, I am a bit annoyed with it.
+> The algorithm is really described well up untill algorithim 4 step 1b.
+> After that it is very hard to decypher. 
+> I did get it working, but I think I had to re-invent the last few bits of the algorithim, just going on the gist of what the paper describes.
+> I did not implement algorithms 2 and 3, as they deal with curved (arc) segments.
 
 
 
 
 
-#### Definitions
+#### Definitions (For the psudocode in this readme only)
 
 Type definitions
 ```python
@@ -134,15 +133,15 @@ Given a `LineString`, call it the `input_linestring`; the goal is to find the `o
    1. delete all parts of any linestring in `split_offset_mls` which falls within this circle
 1. Empty the `cut_targets` list
 
-### Algorithm 4.1.3 - Proximity Clipping
+#### Algorithm 4.1.3 - Proximity Clipping
 17. For each linestring `item_ls` in `split_offset_mls`
-    1. For each segment `(a,b)` in `item_ls`
-       1. For each segment `(u,v)` of `input_linestring`
-          - Find `a_proj` and `b_proj` by projecting `a` and `b` onto segment `(u,v)`
-          - Adjust the projected points such that `a_proj` and `b_proj` lie **at** or **between** `u` and `v`
-          - Find `a_dist` by computing `magnitude(a_proj - a)`
-          - Find `b_dist` by computing `magnitude(b_proj - b)`
-          - if either `a_dist` or `b_dist` is less than the absolute value of `d` then
+   1. For each segment `(a,b)` in `item_ls`
+      1. For each segment `(u,v)` of `input_linestring`
+         - Find `a_proj` and `b_proj` by projecting `a` and `b` onto segment `(u,v)`
+         - Adjust the projected points such that `a_proj` and `b_proj` lie **at** or **between** `u` and `v`
+         - Find `a_dist` by computing `magnitude(a_proj - a)`
+         - Find `b_dist` by computing `magnitude(b_proj - b)`
+         - if either `a_dist` or `b_dist` is less than the absolute value of `d` then
             - if `a_dist > b_dist`add `a_proj` to `cut_targets`
             - Otherwise, add `b_proj` to `cut_targets`  
 1. Repeat Algorithm 4.1.2
