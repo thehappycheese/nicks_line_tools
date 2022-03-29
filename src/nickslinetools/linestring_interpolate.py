@@ -1,9 +1,9 @@
 from typing import List
 
-from nicks_line_tools.Vector2 import Vector2
-from nicks_line_tools.linestring_length import linestring_length
-from nicks_line_tools.linestring_measure import linestring_measure
-from nicks_line_tools.nicks_itertools import pairwise
+from .util.Vector2 import Vector2
+from .linestring_length import linestring_length
+from .linestring_measure import linestring_measure
+from .util.nicks_itertools import pairwise
 
 
 def linestring_interpolate_normalised(linestring: List[Vector2], normalised_distance: float):

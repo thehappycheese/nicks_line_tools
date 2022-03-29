@@ -131,7 +131,7 @@ def linestring_params_to_points(linestring: LineString, params: List[float]):
 	return list(linestring_param_to_point(linestring, param) for param in params)
 
 
-def closest_point_on_line_to_line(a: Vector2, b: Vector2, c: Vector2, d: Vector2) -> (float, Vector2):
+def closest_point_on_line_to_line(a: Vector2, b: Vector2, c: Vector2, d: Vector2) -> Tuple[float, Vector2]:
 	"""the closest point on ab to cd, and the distance_squared"""
 	ab = b - a
 	cd = d - c
@@ -181,7 +181,7 @@ def closest_point_on_line_to_line(a: Vector2, b: Vector2, c: Vector2, d: Vector2
 			return min(result, key=lambda item: item[0])
 
 
-def closest_point_on_linestring_to_line(linestring: LineString, line: LineSegment) -> (float, Vector2):
+def closest_point_on_linestring_to_line(linestring: LineString, line: LineSegment) -> Tuple[float, Vector2]:
 	"""the closest point linestring to line, and the distance_squared"""
 	# key si required since second member of tuples (Vector2) are not comparable with <
 	return min((closest_point_on_line_to_line(*item, *line) for item in pairwise(linestring)), key=lambda item: item[0])

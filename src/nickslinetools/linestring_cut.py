@@ -1,8 +1,8 @@
 import math
 from typing import Optional, Tuple
-from nicks_line_tools.linestring_measure import linestring_measure
-from nicks_line_tools.nicks_itertools import pairwise
-from nicks_line_tools.type_aliases import LineString
+from .linestring_measure import linestring_measure
+from .util.nicks_itertools import pairwise
+from .type_aliases import LineString
 
 
 # [1.3058305121178667e-05, -1.2350172372270971e-05], [115.96657531664442, -32.03385355569668], [115.96685247779686, -32.03413529197542], [115.96706064604444, -32.03437319854402]
