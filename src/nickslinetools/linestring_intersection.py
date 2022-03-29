@@ -1,9 +1,9 @@
 import math
 from typing import Optional, Tuple, List
 
-from nicks_line_tools.Vector2 import Vector2
-from nicks_line_tools.type_aliases import LineString
-from nicks_line_tools.nicks_itertools import pairwise
+from .util.Vector2 import Vector2
+from .type_aliases import LineString
+from .util.nicks_itertools import pairwise
 
 
 def linesegment_intersection(a: Vector2, b: Vector2, c: Vector2, d: Vector2) -> Optional[Tuple[Vector2, float, float]]:

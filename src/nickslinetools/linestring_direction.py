@@ -1,10 +1,10 @@
 import math
 from typing import Optional
 
-from nicks_line_tools.Vector2 import Vector2
-from nicks_line_tools.linestring_measure import linestring_measure
-from nicks_line_tools.nicks_itertools import pairwise
-from nicks_line_tools.type_aliases import LineString, Radians
+from .util.Vector2 import Vector2
+from .linestring_measure import linestring_measure
+from .util.nicks_itertools import pairwise
+from .type_aliases import LineString, Radians
 
 
 def linestring_direction(line_string: LineString, normalised_distance_along: float) -> Vector2:

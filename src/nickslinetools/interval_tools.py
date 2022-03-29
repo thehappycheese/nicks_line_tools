@@ -7,7 +7,7 @@ from typing import Iterable
 from typing import Sequence
 from typing import Tuple
 
-from nicks_line_tools import nicks_itertools
+from .util import nicks_itertools
 
 Interval = Tuple[float, float]
 
@@ -93,6 +93,7 @@ def interval_subtract_multiinterval(minuend: Interval, subtrahend: Iterable[Inte
 	subtrahend_stack_count = 0
 	for current_bound in sorted_link_bounds:
 		current_bound_value, current_bound_side, current_bound_index, = current_bound
+		# TODO: why is this next value un-used?
 		add_bound_to_list = False
 		if current_bound_index == -1:
 			# minuend

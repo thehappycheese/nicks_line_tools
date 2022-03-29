@@ -1,11 +1,10 @@
 import math
 from typing import Tuple, List
 
-from nicks_line_tools import interval_tools
-from nicks_line_tools.Vector2 import Vector2
-from nicks_line_tools.type_aliases import LineSegment, LineString
-from nicks_line_tools.nicks_itertools import pairwise
-from nicks_line_tools.type_aliases import MeasuredLineString
+from . import interval_tools
+from .util.Vector2 import Vector2
+from .type_aliases import LineSegment, LineString, MeasuredLineString
+from .util.nicks_itertools import pairwise
 
 
 def remove_circle_from_linesegment(circle_center: Vector2, radius: float, line_segment: LineSegment) -> Tuple[int, List[LineSegment]]:

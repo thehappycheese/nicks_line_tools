@@ -1,9 +1,9 @@
 from typing import Tuple
 
-from nicks_line_tools.Vector2 import Vector2
-from nicks_line_tools.nicks_itertools import pairwise
-from nicks_line_tools.type_aliases import LineString
-from nicks_line_tools.util import clamp_zero_to_one
+from .util.Vector2 import Vector2
+from .util.nicks_itertools import pairwise
+from .type_aliases import LineString
+from .util.clamp_zero_to_one import clamp_zero_to_one
 
 
 def scalar_projection_of_point_onto_line(a: Vector2, b: Vector2, p: Vector2) -> float:

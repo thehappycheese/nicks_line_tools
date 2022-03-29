@@ -5,12 +5,12 @@ from typing import List, Union
 
 from typing import Tuple
 
-from .Vector2 import Vector2
+from .util.Vector2 import Vector2
 from .linestring_intersection import linesegment_intersection, linestring_intersection_with_self, linestring_intersection
 from .linestring_measure import linestring_measure
 from .linestring_projection import project_point_onto_linestring
 from .linestring_remove_circle import linestring_remove_circle, remove_circles_from_linestring
-from .nicks_itertools import pairwise
+from .util.nicks_itertools import pairwise
 from .type_aliases import LineSegment, LineString
 
 from .util import clamp_zero_to_one

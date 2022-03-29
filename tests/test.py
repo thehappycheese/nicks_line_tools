@@ -3,12 +3,12 @@ from typing import List
 
 import matplotlib.pyplot as plt
 
-from nicks_line_tools.Vector2 import Vector2
-from nicks_line_tools.linestring_measure import linestring_measure
-from nicks_line_tools.linestring_offset import linestring_offset, linestring_params_to_points
-from nicks_line_tools.linestring_remove_circle import remove_circles_from_linestring_2
-from nicks_line_tools.nicks_itertools import pairwise
-from nicks_line_tools.type_aliases import LineString
+from nickslinetools.util.Vector2 import Vector2
+from nickslinetools.linestring_measure import linestring_measure
+from nickslinetools.linestring_offset import linestring_offset, linestring_params_to_points
+from nickslinetools.linestring_remove_circle import remove_circles_from_linestring_2
+from nickslinetools.util.nicks_itertools import pairwise
+from nickslinetools.type_aliases import LineString
 
 TEST_OFFSET = 0.4
 linestring_to_offset = [

@@ -1,1 +1,0 @@
-from nicks_line_tools.linestring_offset import linestring_offset
