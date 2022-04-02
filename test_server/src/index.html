@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Line Offset</title>
+    <link rel="stylesheet" href="style.css" type="text/css">
+
+</head>
+<body>
+    <div id="leftbar">
+        <h3>Mode</h3>
+        <form class="input-group">
+
+            <input id="mode-draw" type="radio" name="mode" value="draw" checked/>
+            <label for="mode-draw">Draw</label>
+
+            <input id="mode-delete" type="radio" name="mode" value="delete"/>
+            <label for="mode-delete">Delete</label>
+
+            <input id="mode-move" type="radio" name="mode" value="move"/>
+            <label for="mode-move">Move</label>
+        </form>
+    </div>
+    <div id="mainbar">
+        <canvas id="maincanvas" width="1600" height="900"></canvas>
+    </div>
+</body>
+</html>

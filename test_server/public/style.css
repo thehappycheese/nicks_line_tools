@@ -1,0 +1,36 @@
+html{
+    height: 100%;
+}
+body{
+    background-color: #3d3d3d;
+    display: grid;
+    gap:10px;
+    margin:10px;
+    padding:0;
+    grid-template-columns: 300px 1fr;
+    height:calc(100% - 20px);
+}
+
+#leftbar{
+    box-sizing: content-box;
+    background-color: gainsboro;
+    padding:10px;
+    overflow-y: scroll;
+}
+#mainbar{
+    overflow-y: hidden;
+}
+
+.input-group{
+    display: grid;
+    grid-template-columns: auto 1fr;
+    margin:10px;
+    gap:10px;
+}
+input, label{
+    padding:5px;
+    margin:0;
+    border:none;
+    border-radius:5px;
+    background-color: #f2f2f2;
+}
